@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { motion, Easing } from "framer-motion";
 
 interface CyberCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'glow' | 'accent';
+  variant?: 'default' | 'glow' | 'accent' | 'secondary' | 'tertiary';
   animated?: boolean;
   delay?: number;
 }
@@ -14,6 +14,8 @@ const CyberCard = React.forwardRef<HTMLDivElement, CyberCardProps>(
       default: "bg-card border border-border",
       glow: "bg-card border border-primary/30 glow-primary",
       accent: "bg-card border border-accent/30 glow-accent",
+      secondary: "bg-card border border-secondary/30 glow-secondary",
+      tertiary: "bg-card border border-tertiary/30 glow-tertiary",
     };
 
     if (!animated) {

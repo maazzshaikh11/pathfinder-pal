@@ -1,10 +1,12 @@
 // Mock data for PlacementPal demo
 
+export type TrackType = 'AI/ML' | 'Cybersecurity' | 'Systems & IoT' | 'Blockchain';
+
 export interface StudentResult {
   id: string;
   user: string;
   email: string;
-  track: 'AI/ML' | 'Cybersecurity';
+  track: TrackType;
   correct: number;
   total: number;
   gaps: string[];
@@ -80,6 +82,64 @@ export const cybersecurityQuestions: Question[] = [
   }
 ];
 
+export const iotQuestions: Question[] = [
+  {
+    id: 'iot-1',
+    type: 'mcq',
+    question: 'Which protocol is commonly used for lightweight messaging in IoT applications?',
+    options: ['HTTP', 'MQTT', 'FTP', 'SMTP'],
+    correctAnswer: 1,
+    topic: 'IoT Protocols',
+    explanation: 'MQTT (Message Queuing Telemetry Transport) is designed for low-bandwidth, high-latency networks, making it ideal for IoT.'
+  },
+  {
+    id: 'iot-2',
+    type: 'mcq',
+    question: 'What is the primary purpose of a Real-Time Operating System (RTOS)?',
+    options: ['Maximum throughput', 'Guaranteed response times', 'Multi-user support', 'High memory capacity'],
+    correctAnswer: 1,
+    topic: 'Real-time Processing',
+    explanation: 'RTOS prioritizes deterministic timing and guaranteed response times for time-critical applications.'
+  },
+  {
+    id: 'iot-3',
+    type: 'coding',
+    question: 'In embedded C, what is the typical size (in bytes) of an unsigned char used to represent sensor readings?',
+    correctAnswer: '1',
+    topic: 'Embedded Systems',
+    explanation: 'An unsigned char is typically 1 byte (8 bits), allowing values from 0 to 255.'
+  }
+];
+
+export const blockchainQuestions: Question[] = [
+  {
+    id: 'blockchain-1',
+    type: 'mcq',
+    question: 'Which consensus mechanism does Ethereum 2.0 primarily use?',
+    options: ['Proof of Work', 'Proof of Stake', 'Delegated Proof of Stake', 'Proof of Authority'],
+    correctAnswer: 1,
+    topic: 'Consensus Mechanisms',
+    explanation: 'Ethereum 2.0 transitioned to Proof of Stake for improved energy efficiency and scalability.'
+  },
+  {
+    id: 'blockchain-2',
+    type: 'mcq',
+    question: 'What is a smart contract?',
+    options: ['A legal document on blockchain', 'Self-executing code on blockchain', 'A type of cryptocurrency', 'A wallet address'],
+    correctAnswer: 1,
+    topic: 'Smart Contracts',
+    explanation: 'Smart contracts are self-executing programs stored on a blockchain that automatically enforce and execute agreement terms.'
+  },
+  {
+    id: 'blockchain-3',
+    type: 'coding',
+    question: 'In Solidity, what keyword is used to make a function callable only by the contract owner? (Hint: it\'s a common modifier name)',
+    correctAnswer: 'onlyOwner',
+    topic: 'Smart Contracts',
+    explanation: 'onlyOwner is a common modifier pattern in Solidity that restricts function access to the contract owner.'
+  }
+];
+
 const studentNames = [
   'Arjun Sharma', 'Priya Patel', 'Rahul Verma', 'Sneha Gupta', 'Vikram Singh',
   'Ananya Reddy', 'Karan Mehta', 'Neha Joshi', 'Aditya Kumar', 'Pooja Nair',
@@ -87,16 +147,20 @@ const studentNames = [
   'Meera Iyer', 'Varun Kapoor', 'Ritu Agarwal', 'Nikhil Malhotra', 'Kavita Menon'
 ];
 
-const gapsByTrack = {
+const gapsByTrack: Record<TrackType, string[]> = {
   'AI/ML': ['Model Evaluation', 'Neural Networks', 'Activation Functions', 'Feature Engineering', 'Regularization'],
-  'Cybersecurity': ['Web Security', 'Network Security', 'Cryptography', 'Authentication', 'Threat Modeling']
+  'Cybersecurity': ['Web Security', 'Network Security', 'Cryptography', 'Authentication', 'Threat Modeling'],
+  'Systems & IoT': ['IoT Protocols', 'Real-time Processing', 'Embedded Systems', 'Sensor Networks', 'Edge Computing'],
+  'Blockchain': ['Smart Contracts', 'Consensus Mechanisms', 'DeFi', 'Cryptographic Hashing', 'Token Standards']
 };
+
+const tracks: TrackType[] = ['AI/ML', 'Cybersecurity', 'Systems & IoT', 'Blockchain'];
 
 function generateMockStudents(): StudentResult[] {
   const students: StudentResult[] = [];
   
   studentNames.forEach((name, index) => {
-    const track = index % 2 === 0 ? 'AI/ML' : 'Cybersecurity';
+    const track = tracks[index % 4];
     const correct = Math.floor(Math.random() * 4); // 0-3
     const gaps: string[] = [];
     const trackGaps = gapsByTrack[track];
@@ -132,7 +196,7 @@ function generateMockStudents(): StudentResult[] {
 
 export const mockStudents = generateMockStudents();
 
-export const getTrackStats = (track: 'AI/ML' | 'Cybersecurity') => {
+export const getTrackStats = (track: TrackType) => {
   const trackStudents = mockStudents.filter(s => s.track === track);
   const total = trackStudents.length;
   

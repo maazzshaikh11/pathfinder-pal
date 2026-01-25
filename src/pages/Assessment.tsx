@@ -6,9 +6,9 @@ import { CyberButton } from '@/components/ui/CyberButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, CheckCircle, XCircle, Brain, Shield, 
-  Terminal, Code, AlertTriangle, Send, Loader2
+  Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2
 } from 'lucide-react';
-import { aiMlQuestions, cybersecurityQuestions, Question, StudentResult } from '@/lib/mockData';
+import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, StudentResult, TrackType } from '@/lib/mockData';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/Navbar';
 
@@ -18,13 +18,39 @@ interface Answer {
   isCorrect: boolean;
 }
 
+const getQuestionsForTrack = (track: TrackType): Question[] => {
+  switch (track) {
+    case 'AI/ML': return aiMlQuestions;
+    case 'Cybersecurity': return cybersecurityQuestions;
+    case 'Systems & IoT': return iotQuestions;
+    case 'Blockchain': return blockchainQuestions;
+    default: return aiMlQuestions;
+  }
+};
+
+const getTrackConfig = (track: TrackType) => {
+  switch (track) {
+    case 'AI/ML': 
+      return { icon: Brain, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
+    case 'Cybersecurity': 
+      return { icon: Shield, color: 'accent', variant: 'accent' as const, buttonVariant: 'accent' as const };
+    case 'Systems & IoT': 
+      return { icon: Cpu, color: 'secondary', variant: 'secondary' as const, buttonVariant: 'secondary' as const };
+    case 'Blockchain': 
+      return { icon: Link2, color: 'tertiary', variant: 'tertiary' as const, buttonVariant: 'tertiary' as const };
+    default: 
+      return { icon: Brain, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
+  }
+};
+
 const Assessment = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { username, setStudentResult } = useAuth();
   
-  const track = (location.state?.track as 'AI/ML' | 'Cybersecurity') || 'AI/ML';
-  const questions = track === 'AI/ML' ? aiMlQuestions : cybersecurityQuestions;
+  const track = (location.state?.track as TrackType) || 'AI/ML';
+  const questions = getQuestionsForTrack(track);
+  const trackConfig = getTrackConfig(track);
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
@@ -212,7 +238,7 @@ const Assessment = () => {
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className={`absolute top-40 right-20 w-72 h-72 rounded-full ${track === 'AI/ML' ? 'bg-primary/5' : 'bg-accent/5'} blur-3xl`}
+          className={`absolute top-40 right-20 w-72 h-72 rounded-full bg-${trackConfig.color}/5 blur-3xl`}
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 5, repeat: Infinity }}
         />
@@ -227,11 +253,7 @@ const Assessment = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              {track === 'AI/ML' ? (
-                <Brain className="w-6 h-6 text-primary" />
-              ) : (
-                <Shield className="w-6 h-6 text-accent" />
-              )}
+              <trackConfig.icon className={`w-6 h-6 text-${trackConfig.color}`} />
               <span className="font-display font-bold text-xl">{track} Assessment</span>
             </div>
             <span className="font-mono text-sm text-muted-foreground">
@@ -242,7 +264,7 @@ const Assessment = () => {
           {/* Progress bar */}
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <motion.div 
-              className={`h-full ${track === 'AI/ML' ? 'bg-primary' : 'bg-accent'} rounded-full`}
+              className={`h-full bg-${trackConfig.color} rounded-full`}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
@@ -260,7 +282,7 @@ const Assessment = () => {
             transition={{ duration: 0.3 }}
             className="max-w-3xl mx-auto"
           >
-            <CyberCard variant={track === 'AI/ML' ? 'glow' : 'accent'}>
+            <CyberCard variant={trackConfig.variant}>
               {/* Question type badge */}
               <div className="flex items-center gap-2 mb-6">
                 {question.type === 'mcq' ? (
@@ -295,18 +317,14 @@ const Assessment = () => {
                       onClick={() => setSelectedOption(index)}
                       className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
                         selectedOption === index
-                          ? track === 'AI/ML' 
-                            ? 'border-primary bg-primary/10' 
-                            : 'border-accent bg-accent/10'
+                          ? `border-${trackConfig.color} bg-${trackConfig.color}/10`
                           : 'border-border bg-muted/30 hover:border-primary/50'
                       }`}
                     >
                       <div className="flex items-center gap-4">
                         <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono font-bold ${
                           selectedOption === index
-                            ? track === 'AI/ML'
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : 'border-accent bg-accent text-accent-foreground'
+                            ? `border-${trackConfig.color} bg-${trackConfig.color} text-${trackConfig.color}-foreground`
                             : 'border-muted-foreground text-muted-foreground'
                         }`}>
                           {String.fromCharCode(65 + index)}
@@ -349,7 +367,7 @@ const Assessment = () => {
                 </CyberButton>
 
                 <CyberButton
-                  variant={track === 'AI/ML' ? 'primary' : 'accent'}
+                  variant={trackConfig.buttonVariant}
                   onClick={handleAnswer}
                   disabled={(question.type === 'mcq' && selectedOption === null) || 
                             (question.type === 'coding' && !codingAnswer.trim()) ||
