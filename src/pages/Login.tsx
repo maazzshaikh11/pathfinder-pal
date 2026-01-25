@@ -6,6 +6,7 @@ import { CyberCard } from '@/components/ui/CyberCard';
 import { motion } from 'framer-motion';
 import { Brain, User, Shield, Terminal, Zap } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import CursorGlow from '@/components/CursorGlow';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -28,6 +29,9 @@ const Login = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden grid-pattern">
+      {/* Cursor following glow */}
+      <CursorGlow color="primary" size={250} />
+      
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div 
