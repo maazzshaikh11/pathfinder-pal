@@ -50,6 +50,23 @@ export const aiMlQuestions: Question[] = [
     correctAnswer: '0.5',
     topic: 'Activation Functions',
     explanation: 'sigmoid(0) = 1/(1+e^0) = 1/2 = 0.5. The sigmoid function maps any input to a value between 0 and 1.'
+  },
+  {
+    id: 'aiml-4',
+    type: 'mcq',
+    question: 'What technique is used to prevent gradient vanishing in deep networks?',
+    options: ['Max Pooling', 'Batch Normalization', 'Softmax', 'One-Hot Encoding'],
+    correctAnswer: 1,
+    topic: 'Deep Learning',
+    explanation: 'Batch Normalization normalizes layer inputs, stabilizing gradients and enabling deeper networks to train effectively.'
+  },
+  {
+    id: 'aiml-5',
+    type: 'coding',
+    question: 'In a confusion matrix, if TP=80, FP=10, TN=85, FN=25, what is the precision value? (Round to 2 decimal places)',
+    correctAnswer: '0.89',
+    topic: 'Model Evaluation',
+    explanation: 'Precision = TP/(TP+FP) = 80/(80+10) = 80/90 ≈ 0.89. It measures the accuracy of positive predictions.'
   }
 ];
 
@@ -79,6 +96,23 @@ export const cybersecurityQuestions: Question[] = [
     correctAnswer: 'D',
     topic: 'Cryptography',
     explanation: 'Caesar cipher shifts each letter by a fixed amount. A shifted by 3 becomes D (A→B→C→D).'
+  },
+  {
+    id: 'cyber-4',
+    type: 'mcq',
+    question: 'Which hashing algorithm is considered insecure and should NOT be used for password storage?',
+    options: ['bcrypt', 'Argon2', 'MD5', 'scrypt'],
+    correctAnswer: 2,
+    topic: 'Cryptography',
+    explanation: 'MD5 is cryptographically broken and vulnerable to collision attacks, making it unsuitable for security-critical applications.'
+  },
+  {
+    id: 'cyber-5',
+    type: 'coding',
+    question: 'In SQL injection prevention, what method should be used instead of string concatenation? (One word, lowercase)',
+    correctAnswer: 'parameterization',
+    topic: 'Web Security',
+    explanation: 'Parameterized queries (prepared statements) separate SQL code from data, preventing injection attacks.'
   }
 ];
 
@@ -108,6 +142,23 @@ export const iotQuestions: Question[] = [
     correctAnswer: '1',
     topic: 'Embedded Systems',
     explanation: 'An unsigned char is typically 1 byte (8 bits), allowing values from 0 to 255.'
+  },
+  {
+    id: 'iot-4',
+    type: 'mcq',
+    question: 'Which communication standard is specifically designed for low-power wide-area networks (LPWAN)?',
+    options: ['WiFi 6', 'LoRaWAN', 'Bluetooth Classic', 'USB 3.0'],
+    correctAnswer: 1,
+    topic: 'IoT Protocols',
+    explanation: 'LoRaWAN enables long-range communication with minimal power consumption, ideal for remote IoT sensors.'
+  },
+  {
+    id: 'iot-5',
+    type: 'coding',
+    question: 'In I2C communication, how many wires are needed for data transfer (excluding power)? Enter a number.',
+    correctAnswer: '2',
+    topic: 'Embedded Systems',
+    explanation: 'I2C uses 2 wires: SDA (data line) and SCL (clock line) for bidirectional communication.'
   }
 ];
 
@@ -137,6 +188,23 @@ export const blockchainQuestions: Question[] = [
     correctAnswer: 'onlyOwner',
     topic: 'Smart Contracts',
     explanation: 'onlyOwner is a common modifier pattern in Solidity that restricts function access to the contract owner.'
+  },
+  {
+    id: 'blockchain-4',
+    type: 'mcq',
+    question: 'What is the maximum supply of Bitcoin?',
+    options: ['10 million', '21 million', '100 million', 'Unlimited'],
+    correctAnswer: 1,
+    topic: 'Tokenomics',
+    explanation: 'Bitcoin has a hard cap of 21 million coins, making it a deflationary asset by design.'
+  },
+  {
+    id: 'blockchain-5',
+    type: 'coding',
+    question: 'What is the name of the standard for fungible tokens on Ethereum? (Format: ERC-XX)',
+    correctAnswer: 'ERC-20',
+    topic: 'Token Standards',
+    explanation: 'ERC-20 is the technical standard for fungible tokens on Ethereum, defining how tokens are transferred and tracked.'
   }
 ];
 
@@ -161,21 +229,21 @@ function generateMockStudents(): StudentResult[] {
   
   studentNames.forEach((name, index) => {
     const track = tracks[index % 4];
-    const correct = Math.floor(Math.random() * 4); // 0-3
+    const correct = Math.floor(Math.random() * 6); // 0-5
     const gaps: string[] = [];
     const trackGaps = gapsByTrack[track];
     
     // Assign gaps based on performance
-    if (correct < 3) {
-      const numGaps = 3 - correct;
+    if (correct < 5) {
+      const numGaps = 5 - correct;
       for (let i = 0; i < numGaps && i < trackGaps.length; i++) {
         gaps.push(trackGaps[Math.floor(Math.random() * trackGaps.length)]);
       }
     }
     
     let level: 'Beginner' | 'Intermediate' | 'Ready';
-    if (correct <= 1) level = 'Beginner';
-    else if (correct === 2) level = 'Intermediate';
+    if (correct <= 2) level = 'Beginner';
+    else if (correct <= 4) level = 'Intermediate';
     else level = 'Ready';
     
     students.push({
@@ -184,7 +252,7 @@ function generateMockStudents(): StudentResult[] {
       email: `${name.toLowerCase().replace(' ', '.')}@college.edu`,
       track,
       correct,
-      total: 3,
+      total: 5,
       gaps: [...new Set(gaps)], // Remove duplicates
       level,
       completedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
