@@ -22,9 +22,9 @@
     --primary: 180 100% 50%;
     --primary-foreground: 220 20% 6%;
 
-    /* Deep Purple Secondary */
-    --secondary: 270 60% 25%;
-    --secondary-foreground: 180 100% 95%;
+    /* Emerald Green Secondary - Systems & IoT */
+    --secondary: 160 85% 40%;
+    --secondary-foreground: 220 20% 6%;
 
     --muted: 220 20% 15%;
     --muted-foreground: 220 15% 55%;
@@ -40,8 +40,8 @@
     --success: 145 80% 45%;
     --success-foreground: 220 20% 6%;
 
-    /* Tertiary - Deep Violet for Blockchain */
-    --tertiary: 280 85% 60%;
+    /* Tertiary - Hot Pink for Blockchain */
+    --tertiary: 330 90% 55%;
     --tertiary-foreground: 220 20% 6%;
 
     --border: 220 20% 18%;
@@ -54,8 +54,8 @@
     --glow-primary: 0 0 20px hsl(180 100% 50% / 0.4);
     --glow-accent: 0 0 20px hsl(35 100% 55% / 0.4);
     --glow-success: 0 0 20px hsl(145 80% 45% / 0.4);
-    --glow-secondary: 0 0 20px hsl(270 60% 50% / 0.4);
-    --glow-tertiary: 0 0 20px hsl(280 85% 60% / 0.4);
+    --glow-secondary: 0 0 20px hsl(160 85% 40% / 0.4);
+    --glow-tertiary: 0 0 20px hsl(330 90% 55% / 0.4);
 
     /* Sidebar */
     --sidebar-background: 220 25% 8%;
@@ -119,7 +119,11 @@
   }
 
   .text-glow-tertiary {
-    text-shadow: 0 0 10px hsl(280 85% 60% / 0.6);
+    text-shadow: 0 0 10px hsl(330 90% 55% / 0.6);
+  }
+
+  .text-glow-secondary {
+    text-shadow: 0 0 10px hsl(160 85% 40% / 0.6);
   }
 
   /* Scanline Effect */
