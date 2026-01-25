@@ -2,18 +2,20 @@ import { useNavigate } from 'react-router-dom';
 import { CyberCard } from '@/components/ui/CyberCard';
 import { CyberButton } from '@/components/ui/CyberButton';
 import { motion } from 'framer-motion';
-import { Brain, Shield, Cpu, Lock, ArrowRight, Sparkles, Code } from 'lucide-react';
+import { Brain, Shield, Cpu, Lock, ArrowRight, Sparkles, Code, Wifi, Link2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 
+type TrackId = 'AI/ML' | 'Cybersecurity' | 'Systems & IoT' | 'Blockchain';
+
 interface Track {
-  id: 'AI/ML' | 'Cybersecurity';
+  id: TrackId;
   title: string;
   subtitle: string;
   icon: React.ElementType;
   secondaryIcon: React.ElementType;
   description: string;
   topics: string[];
-  color: 'primary' | 'accent';
+  color: 'primary' | 'accent' | 'secondary' | 'tertiary';
 }
 
 const tracks: Track[] = [
@@ -36,13 +38,33 @@ const tracks: Track[] = [
     description: 'Test your knowledge of web security, network protocols, cryptography, and threat detection.',
     topics: ['Web Security', 'Cryptography', 'Network Security', 'Authentication'],
     color: 'accent'
+  },
+  {
+    id: 'Systems & IoT',
+    title: 'Systems & IoT',
+    subtitle: 'Embedded systems, IoT protocols, and real-time processing',
+    icon: Cpu,
+    secondaryIcon: Wifi,
+    description: 'Assess your expertise in embedded systems, sensor networks, communication protocols, and real-time data processing.',
+    topics: ['Embedded Systems', 'IoT Protocols', 'Real-time Processing', 'Sensor Networks'],
+    color: 'secondary'
+  },
+  {
+    id: 'Blockchain',
+    title: 'Blockchain',
+    subtitle: 'Smart contracts, consensus mechanisms, and DeFi',
+    icon: Link2,
+    secondaryIcon: Lock,
+    description: 'Evaluate your understanding of blockchain technology, smart contract development, and decentralized finance concepts.',
+    topics: ['Smart Contracts', 'Consensus Mechanisms', 'DeFi', 'Cryptographic Hashing'],
+    color: 'tertiary'
   }
 ];
 
 const TrackSelection = () => {
   const navigate = useNavigate();
 
-  const handleSelectTrack = (trackId: 'AI/ML' | 'Cybersecurity') => {
+  const handleSelectTrack = (trackId: TrackId) => {
     navigate('/assessment', { state: { track: trackId } });
   };
 
@@ -84,7 +106,7 @@ const TrackSelection = () => {
         </motion.div>
 
         {/* Track Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
           {tracks.map((track, index) => (
             <motion.div
               key={track.id}
@@ -93,34 +115,59 @@ const TrackSelection = () => {
               transition={{ delay: index * 0.15, duration: 0.5 }}
             >
               <CyberCard 
-                variant={track.color === 'primary' ? 'glow' : 'accent'} 
+                variant={track.color === 'primary' ? 'glow' : track.color === 'accent' ? 'accent' : track.color === 'secondary' ? 'secondary' : 'tertiary'} 
                 className="h-full group cursor-pointer hover:scale-[1.02] transition-transform duration-300"
                 animated={false}
                 onClick={() => handleSelectTrack(track.id)}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">
-                  <div className={`w-16 h-16 rounded-xl ${track.color === 'primary' ? 'bg-primary/20 border-primary/50 glow-primary' : 'bg-accent/20 border-accent/50 glow-accent'} border flex items-center justify-center`}>
-                    <track.icon className={`w-8 h-8 ${track.color === 'primary' ? 'text-primary' : 'text-accent'}`} />
+                  <div className={`w-16 h-16 rounded-xl border flex items-center justify-center ${
+                    track.color === 'primary' ? 'bg-primary/20 border-primary/50 glow-primary' : 
+                    track.color === 'accent' ? 'bg-accent/20 border-accent/50 glow-accent' : 
+                    track.color === 'secondary' ? 'bg-secondary/20 border-secondary/50' : 
+                    'bg-tertiary/20 border-tertiary/50'
+                  }`}>
+                    <track.icon className={`w-8 h-8 ${
+                      track.color === 'primary' ? 'text-primary' : 
+                      track.color === 'accent' ? 'text-accent' : 
+                      track.color === 'secondary' ? 'text-secondary' : 
+                      'text-tertiary'
+                    }`} />
                   </div>
-                  <track.secondaryIcon className={`w-6 h-6 ${track.color === 'primary' ? 'text-primary/50' : 'text-accent/50'}`} />
+                  <track.secondaryIcon className={`w-6 h-6 ${
+                    track.color === 'primary' ? 'text-primary/50' : 
+                    track.color === 'accent' ? 'text-accent/50' : 
+                    track.color === 'secondary' ? 'text-secondary/50' : 
+                    'text-tertiary/50'
+                  }`} />
                 </div>
 
                 {/* Title */}
-                <h2 className={`font-display text-2xl font-bold mb-1 ${track.color === 'primary' ? 'text-primary' : 'text-accent'}`}>
+                <h2 className={`font-display text-2xl font-bold mb-1 ${
+                  track.color === 'primary' ? 'text-primary' : 
+                  track.color === 'accent' ? 'text-accent' : 
+                  track.color === 'secondary' ? 'text-secondary' : 
+                  'text-tertiary'
+                }`}>
                   {track.title}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-4">{track.subtitle}</p>
 
                 {/* Description */}
-                <p className="text-foreground/80 mb-6">{track.description}</p>
+                <p className="text-foreground/80 mb-6 text-sm">{track.description}</p>
 
                 {/* Topics */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   {track.topics.map((topic) => (
                     <span 
                       key={topic} 
-                      className={`px-3 py-1 text-xs font-mono rounded-full ${track.color === 'primary' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-accent/10 text-accent border-accent/30'} border`}
+                      className={`px-2 py-1 text-xs font-mono rounded-full border ${
+                        track.color === 'primary' ? 'bg-primary/10 text-primary border-primary/30' : 
+                        track.color === 'accent' ? 'bg-accent/10 text-accent border-accent/30' : 
+                        track.color === 'secondary' ? 'bg-secondary/10 text-secondary border-secondary/30' : 
+                        'bg-tertiary/10 text-tertiary border-tertiary/30'
+                      }`}
                     >
                       {topic}
                     </span>
@@ -129,8 +176,8 @@ const TrackSelection = () => {
 
                 {/* CTA */}
                 <CyberButton 
-                  variant={track.color === 'primary' ? 'primary' : 'accent'}
-                  className="w-full group-hover:glow-primary"
+                  variant={track.color === 'primary' ? 'primary' : track.color === 'accent' ? 'accent' : track.color === 'secondary' ? 'secondary' : 'tertiary'}
+                  className="w-full"
                 >
                   Start Assessment
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

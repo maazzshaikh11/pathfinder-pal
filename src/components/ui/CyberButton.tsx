@@ -8,8 +8,9 @@ const cyberButtonVariants = cva(
     variants: {
       variant: {
         primary: "bg-primary text-primary-foreground hover:bg-primary/90 glow-primary",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-primary/30",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 glow-secondary",
         accent: "bg-accent text-accent-foreground hover:bg-accent/90 glow-accent",
+        tertiary: "bg-tertiary text-tertiary-foreground hover:bg-tertiary/90 glow-tertiary",
         ghost: "bg-transparent text-primary border border-primary/50 hover:bg-primary/10 hover:border-primary",
         success: "bg-success text-success-foreground hover:bg-success/90 glow-success",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
