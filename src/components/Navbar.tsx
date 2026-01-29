@@ -18,7 +18,6 @@ const Navbar = () => {
     { path: '/tracks', label: 'Tracks', icon: Home },
     { path: '/assessment', label: 'Assessment', icon: ClipboardCheck },
     { path: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/student-chat', label: 'TPO Chat', icon: MessageSquare },
   ] : isLoggedIn && role === 'tpo' ? [
     { path: '/tpo-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/tpo-chat', label: 'Messages', icon: MessageSquare },
