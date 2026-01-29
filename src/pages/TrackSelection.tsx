@@ -10,10 +10,13 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
+import FloatingTPOChat from '@/components/FloatingTPOChat';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/authContext';
 import { analyzeResume, simulateResumeContent, ResumeAnalysis } from '@/lib/resumeScoring';
 import { Progress } from '@/components/ui/progress';
+import { useResumeChat } from '@/hooks/useResumeChat';
+import ReactMarkdown from 'react-markdown';
 
 type TrackId = 'AI/ML' | 'Cybersecurity' | 'Systems & IoT' | 'Blockchain';
 
@@ -28,11 +31,6 @@ interface Track {
   color: 'primary' | 'accent' | 'secondary' | 'tertiary';
 }
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
 
 const tracks: Track[] = [
   {
@@ -88,11 +86,15 @@ const TrackSelection = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedTrackForResume, setSelectedTrackForResume] = useState<TrackId | null>(null);
   
-  // Chat state
+  // AI Chat hook
+  const { messages: chatMessages, isLoading: isTyping, sendMessage, initializeChat, clearChat } = useResumeChat({
+    resumeAnalysis,
+    username
+  });
+  
+  // Chat UI state
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
 
   const handleSelectTrack = (trackId: TrackId) => {
     navigate('/assessment', { state: { track: trackId } });
@@ -126,150 +128,26 @@ const TrackSelection = () => {
     setResumeAnalysis(analysis);
     setIsAnalyzing(false);
     
-    // Initialize chat with resume context
-    setChatMessages([{
-      id: '1',
-      role: 'assistant',
-      content: `Hello ${username}! 👋 I've analyzed your resume "${resumeFile.name}". 
-
-📊 **Your Resume Score: ${analysis.overallScore}%**
-
-Here's a quick breakdown:
-• Skill Match: ${analysis.skillMatchScore}%
-• Project Quality: ${analysis.projectQualityScore}%
-• Experience: ${analysis.experienceScore}%
-
-${analysis.recommendations.length > 0 ? `\n💡 **Top Recommendation:** ${analysis.recommendations[0]}` : ''}
-
-Feel free to ask me anything about your resume, skill gaps, or how to improve your profile for ${selectedTrackForResume || 'tech'} roles!`
-    }]);
+    // Initialize AI chat with resume context
+    initializeChat(analysis, resumeFile.name);
     setChatOpen(true);
   };
 
   const handleRemoveFile = () => {
     setResumeFile(null);
     setResumeAnalysis(null);
-    setChatMessages([]);
+    clearChat();
     setChatOpen(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const generateChatResponse = (userMessage: string): string => {
-    const msg = userMessage.toLowerCase();
-    
-    if (!resumeAnalysis) {
-      return "Please upload your resume first so I can provide personalized guidance!";
-    }
-    
-    if (msg.includes('score') || msg.includes('overall')) {
-      return `Your overall resume score is **${resumeAnalysis.overallScore}%**. This is calculated using:
-      
-• 30% Skill Match (${resumeAnalysis.skillMatchScore}%)
-• 25% Project Quality (${resumeAnalysis.projectQualityScore}%)
-• 15% Experience (${resumeAnalysis.experienceScore}%)
-• 10% Resume Structure (${resumeAnalysis.resumeStructureScore}%)
-• 10% Action Verbs (${resumeAnalysis.actionVerbsScore}%)
-• 10% Consistency (${resumeAnalysis.consistencyScore}%)
-
-${resumeAnalysis.overallScore >= 70 ? "Great job! Your resume is well-structured." : "There's room for improvement. Focus on the areas with lower scores."}`;
-    }
-    
-    if (msg.includes('skill') || msg.includes('match')) {
-      const matched = resumeAnalysis.matchedSkills.slice(0, 5).join(', ');
-      const missing = resumeAnalysis.missingSkills.slice(0, 3).join(', ');
-      return `**Skill Match Score: ${resumeAnalysis.skillMatchScore}%**
-
-✅ **Skills Found:** ${matched || 'None detected'}
-
-❌ **Missing Skills:** ${missing || 'None - great coverage!'}
-
-The Skill Match Score is calculated as:
-(Skills Found / Required Skills) × 100
-
-To improve, consider adding relevant skills you have but haven't mentioned, or learning the missing ones through projects and courses.`;
-    }
-    
-    if (msg.includes('project')) {
-      return `**Project Quality Score: ${resumeAnalysis.projectQualityScore}%**
-
-To improve your project score:
-1. Include 2-4 significant projects
-2. Use action verbs (developed, built, implemented)
-3. Quantify your impact (e.g., "improved performance by 40%")
-4. Mention technologies used
-5. Link to GitHub or live demos if possible`;
-    }
-    
-    if (msg.includes('improve') || msg.includes('recommendation') || msg.includes('suggest')) {
-      return `**Recommendations to improve your resume:**
-
-${resumeAnalysis.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
-
-Focus on quantifying your achievements and using strong action verbs. Each bullet point should show impact, not just responsibilities.`;
-    }
-    
-    if (msg.includes('experience')) {
-      return `**Experience Score: ${resumeAnalysis.experienceScore}%**
-
-Tips to boost your experience section:
-• Start each bullet with an action verb
-• Quantify achievements (numbers, percentages)
-• Focus on impact, not just duties
-• Include relevant internships and part-time work
-• Highlight leadership and collaboration`;
-    }
-    
-    if (msg.includes('weak') || msg.includes('gap') || msg.includes('missing')) {
-      const weakAreas = [];
-      if (resumeAnalysis.skillMatchScore < 50) weakAreas.push('Skill alignment with target role');
-      if (resumeAnalysis.projectQualityScore < 50) weakAreas.push('Project descriptions and impact');
-      if (resumeAnalysis.actionVerbsScore < 50) weakAreas.push('Use of action verbs');
-      if (resumeAnalysis.experienceScore < 50) weakAreas.push('Experience documentation');
-      
-      return `**Areas that need improvement:**
-
-${weakAreas.length > 0 ? weakAreas.map(a => `• ${a}`).join('\n') : '• Your resume looks solid across all areas!'}
-
-${resumeAnalysis.missingSkills.length > 0 ? `\n**Skills to learn:** ${resumeAnalysis.missingSkills.join(', ')}` : ''}`;
-    }
-    
-    return `Based on your resume analysis (Score: ${resumeAnalysis.overallScore}%), I can help you with:
-
-• Understanding your resume score breakdown
-• Identifying skill gaps and how to fill them
-• Improving specific sections (projects, experience)
-• Getting personalized recommendations
-
-What would you like to know more about?`;
-  };
-
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
-    
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputMessage
-    };
-    
-    setChatMessages(prev => [...prev, userMessage]);
+    const message = inputMessage;
     setInputMessage('');
-    setIsTyping(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
-    
-    const response = generateChatResponse(inputMessage);
-    
-    const assistantMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: response
-    };
-    
-    setIsTyping(false);
-    setChatMessages(prev => [...prev, assistantMessage]);
+    await sendMessage(message);
   };
 
   const ScoreBar = ({ label, score, icon: Icon }: { label: string; score: number; icon: React.ElementType }) => (
@@ -641,7 +519,9 @@ What would you like to know more about?`;
                               ? 'bg-primary/20 border border-primary/30' 
                               : 'bg-muted border border-border'
                           }`}>
-                            <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                            <div className="prose prose-sm prose-invert max-w-none text-sm">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
                           </div>
                         </motion.div>
                       ))}
@@ -653,7 +533,7 @@ What would you like to know more about?`;
                           <div className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="text-xs">AI is typing...</span>
+                        <span className="text-xs">AI is thinking...</span>
                       </div>
                     )}
                   </div>
@@ -663,11 +543,9 @@ What would you like to know more about?`;
                     {['Score breakdown', 'Skill gaps', 'How to improve?'].map(q => (
                       <button
                         key={q}
-                        onClick={() => {
-                          setInputMessage(q);
-                          setTimeout(() => handleSendMessage(), 100);
-                        }}
-                        className="px-2 py-1 text-xs bg-muted border border-border rounded-full hover:border-accent transition-colors"
+                        onClick={() => sendMessage(q)}
+                        disabled={isTyping}
+                        className="px-2 py-1 text-xs bg-muted border border-border rounded-full hover:border-accent transition-colors disabled:opacity-50"
                       >
                         {q}
                       </button>
@@ -698,6 +576,9 @@ What would you like to know more about?`;
           </div>
         </motion.div>
       </div>
+      
+      {/* Floating TPO Chat */}
+      <FloatingTPOChat />
     </div>
   );
 };
