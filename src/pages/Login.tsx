@@ -23,7 +23,7 @@ const Login = () => {
     if (selectedRole === 'tpo') {
       navigate('/tpo-dashboard');
     } else {
-      navigate('/tracks');
+      navigate('/student-hub');
     }
   };
 

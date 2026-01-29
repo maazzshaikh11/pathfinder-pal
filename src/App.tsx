@@ -9,6 +9,7 @@ import TrackSelection from "./pages/TrackSelection";
 import Assessment from "./pages/Assessment";
 import StudentDashboard from "./pages/StudentDashboard";
 import TPODashboard from "./pages/TPODashboard";
+import StudentHub from "./pages/StudentHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/student-hub" element={<StudentHub />} />
             <Route path="/tracks" element={<TrackSelection />} />
             <Route path="/assessment" element={<Assessment />} />
             <Route path="/student-dashboard" element={<StudentDashboard />} />

@@ -6,9 +6,9 @@ import { CyberButton } from '@/components/ui/CyberButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, CheckCircle, XCircle, Brain, Shield, 
-  Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2
+  Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2, Zap
 } from 'lucide-react';
-import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, StudentResult, TrackType } from '@/lib/mockData';
+import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, StudentResult, TrackType, DifficultyLevel } from '@/lib/mockData';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/Navbar';
 
@@ -40,6 +40,17 @@ const getTrackConfig = (track: TrackType) => {
       return { icon: Link2, color: 'tertiary', variant: 'tertiary' as const, buttonVariant: 'tertiary' as const };
     default: 
       return { icon: Brain, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
+  }
+};
+
+const getDifficultyConfig = (difficulty: DifficultyLevel) => {
+  switch (difficulty) {
+    case 'Easy': 
+      return { color: 'success', bgClass: 'bg-success/20 border-success/30 text-success' };
+    case 'Medium': 
+      return { color: 'accent', bgClass: 'bg-accent/20 border-accent/30 text-accent' };
+    case 'Hard': 
+      return { color: 'destructive', bgClass: 'bg-destructive/20 border-destructive/30 text-destructive' };
   }
 };
 
@@ -283,8 +294,8 @@ const Assessment = () => {
             className="max-w-3xl mx-auto"
           >
             <CyberCard variant={trackConfig.variant}>
-              {/* Question type badge */}
-              <div className="flex items-center gap-2 mb-6">
+              {/* Question type and difficulty badges */}
+              <div className="flex items-center gap-2 mb-6 flex-wrap">
                 {question.type === 'mcq' ? (
                   <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30">
                     <Terminal className="w-4 h-4 text-primary" />
@@ -296,6 +307,10 @@ const Assessment = () => {
                     <span className="font-mono text-xs text-accent">CODING_CHALLENGE</span>
                   </div>
                 )}
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getDifficultyConfig(question.difficulty).bgClass}`}>
+                  <Zap className="w-4 h-4" />
+                  <span className="font-mono text-xs">{question.difficulty.toUpperCase()}</span>
+                </div>
                 <span className="px-3 py-1 rounded-full bg-muted border border-border font-mono text-xs text-muted-foreground">
                   {question.topic}
                 </span>
