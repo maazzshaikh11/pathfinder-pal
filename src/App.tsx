@@ -9,6 +9,8 @@ import TrackSelection from "./pages/TrackSelection";
 import Assessment from "./pages/Assessment";
 import StudentDashboard from "./pages/StudentDashboard";
 import TPODashboard from "./pages/TPODashboard";
+import TPOChat from "./pages/TPOChat";
+import StudentChat from "./pages/StudentChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +27,9 @@ const App = () => (
             <Route path="/tracks" element={<TrackSelection />} />
             <Route path="/assessment" element={<Assessment />} />
             <Route path="/student-dashboard" element={<StudentDashboard />} />
+            <Route path="/student-chat" element={<StudentChat />} />
             <Route path="/tpo-dashboard" element={<TPODashboard />} />
+            <Route path="/tpo-chat" element={<TPOChat />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
