@@ -2,7 +2,7 @@ import { useAuth } from '@/lib/authContext';
 import { CyberButton } from './ui/CyberButton';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, Home, ClipboardCheck, LayoutDashboard, Shield, Brain, Sparkles } from 'lucide-react';
+import { LogOut, Home, ClipboardCheck, LayoutDashboard, Shield, Brain } from 'lucide-react';
 
 const Navbar = () => {
   const { isLoggedIn, role, username, logout } = useAuth();
@@ -15,7 +15,6 @@ const Navbar = () => {
   };
 
   const navItems = isLoggedIn && role === 'student' ? [
-    { path: '/student-hub', label: 'Hub', icon: Sparkles },
     { path: '/tracks', label: 'Tracks', icon: Home },
     { path: '/assessment', label: 'Assessment', icon: ClipboardCheck },
     { path: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,7 +31,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to={isLoggedIn ? (role === 'tpo' ? '/tpo-dashboard' : '/student-hub') : '/'} className="flex items-center gap-2 group">
+          <Link to={isLoggedIn ? (role === 'tpo' ? '/tpo-dashboard' : '/tracks') : '/'} className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/50 flex items-center justify-center glow-primary">
               <Brain className="w-5 h-5 text-primary" />
             </div>
