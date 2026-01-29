@@ -14,6 +14,8 @@ export interface StudentResult {
   completedAt: string;
 }
 
+export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
+
 export interface Question {
   id: string;
   type: 'mcq' | 'coding';
@@ -22,6 +24,7 @@ export interface Question {
   correctAnswer: string | number;
   topic: string;
   explanation: string;
+  difficulty: DifficultyLevel;
 }
 
 export const aiMlQuestions: Question[] = [
@@ -32,7 +35,8 @@ export const aiMlQuestions: Question[] = [
     options: ['Accuracy', 'F1-Score', 'Mean Squared Error', 'R-squared'],
     correctAnswer: 1,
     topic: 'Model Evaluation',
-    explanation: 'F1-Score balances precision and recall, making it ideal for imbalanced datasets where accuracy can be misleading.'
+    explanation: 'F1-Score balances precision and recall, making it ideal for imbalanced datasets where accuracy can be misleading.',
+    difficulty: 'Medium'
   },
   {
     id: 'aiml-2',
@@ -41,7 +45,8 @@ export const aiMlQuestions: Question[] = [
     options: ['Speed up training', 'Reduce overfitting', 'Increase model capacity', 'Normalize inputs'],
     correctAnswer: 1,
     topic: 'Neural Networks',
-    explanation: 'Dropout randomly deactivates neurons during training, preventing co-adaptation and reducing overfitting.'
+    explanation: 'Dropout randomly deactivates neurons during training, preventing co-adaptation and reducing overfitting.',
+    difficulty: 'Easy'
   },
   {
     id: 'aiml-3',
@@ -49,7 +54,8 @@ export const aiMlQuestions: Question[] = [
     question: 'Write a Python function that calculates the sigmoid activation function. The function should take a number x and return 1 / (1 + e^(-x)). What would be the output for x = 0?',
     correctAnswer: '0.5',
     topic: 'Activation Functions',
-    explanation: 'sigmoid(0) = 1/(1+e^0) = 1/2 = 0.5. The sigmoid function maps any input to a value between 0 and 1.'
+    explanation: 'sigmoid(0) = 1/(1+e^0) = 1/2 = 0.5. The sigmoid function maps any input to a value between 0 and 1.',
+    difficulty: 'Medium'
   },
   {
     id: 'aiml-4',
@@ -58,7 +64,8 @@ export const aiMlQuestions: Question[] = [
     options: ['Max Pooling', 'Batch Normalization', 'Softmax', 'One-Hot Encoding'],
     correctAnswer: 1,
     topic: 'Deep Learning',
-    explanation: 'Batch Normalization normalizes layer inputs, stabilizing gradients and enabling deeper networks to train effectively.'
+    explanation: 'Batch Normalization normalizes layer inputs, stabilizing gradients and enabling deeper networks to train effectively.',
+    difficulty: 'Hard'
   },
   {
     id: 'aiml-5',
@@ -66,7 +73,8 @@ export const aiMlQuestions: Question[] = [
     question: 'In a confusion matrix, if TP=80, FP=10, TN=85, FN=25, what is the precision value? (Round to 2 decimal places)',
     correctAnswer: '0.89',
     topic: 'Model Evaluation',
-    explanation: 'Precision = TP/(TP+FP) = 80/(80+10) = 80/90 ≈ 0.89. It measures the accuracy of positive predictions.'
+    explanation: 'Precision = TP/(TP+FP) = 80/(80+10) = 80/90 ≈ 0.89. It measures the accuracy of positive predictions.',
+    difficulty: 'Hard'
   }
 ];
 
@@ -78,7 +86,8 @@ export const cybersecurityQuestions: Question[] = [
     options: ['SQL Injection', 'XSS (Cross-Site Scripting)', 'CSRF (Cross-Site Request Forgery)', 'DDoS'],
     correctAnswer: 2,
     topic: 'Web Security',
-    explanation: 'CSRF exploits the trust that a site has in the user\'s browser by making unauthorized requests on behalf of an authenticated user.'
+    explanation: 'CSRF exploits the trust that a site has in the user\'s browser by making unauthorized requests on behalf of an authenticated user.',
+    difficulty: 'Medium'
   },
   {
     id: 'cyber-2',
@@ -87,7 +96,8 @@ export const cybersecurityQuestions: Question[] = [
     options: ['Simple', 'Secure', 'Standard', 'System'],
     correctAnswer: 1,
     topic: 'Network Security',
-    explanation: 'HTTPS stands for HyperText Transfer Protocol Secure, indicating encrypted communication.'
+    explanation: 'HTTPS stands for HyperText Transfer Protocol Secure, indicating encrypted communication.',
+    difficulty: 'Easy'
   },
   {
     id: 'cyber-3',
@@ -95,7 +105,8 @@ export const cybersecurityQuestions: Question[] = [
     question: 'In a Caesar cipher with a shift of 3, what would be the encrypted form of the letter "A"?',
     correctAnswer: 'D',
     topic: 'Cryptography',
-    explanation: 'Caesar cipher shifts each letter by a fixed amount. A shifted by 3 becomes D (A→B→C→D).'
+    explanation: 'Caesar cipher shifts each letter by a fixed amount. A shifted by 3 becomes D (A→B→C→D).',
+    difficulty: 'Easy'
   },
   {
     id: 'cyber-4',
@@ -104,7 +115,8 @@ export const cybersecurityQuestions: Question[] = [
     options: ['bcrypt', 'Argon2', 'MD5', 'scrypt'],
     correctAnswer: 2,
     topic: 'Cryptography',
-    explanation: 'MD5 is cryptographically broken and vulnerable to collision attacks, making it unsuitable for security-critical applications.'
+    explanation: 'MD5 is cryptographically broken and vulnerable to collision attacks, making it unsuitable for security-critical applications.',
+    difficulty: 'Medium'
   },
   {
     id: 'cyber-5',
@@ -112,7 +124,8 @@ export const cybersecurityQuestions: Question[] = [
     question: 'In SQL injection prevention, what method should be used instead of string concatenation? (One word, lowercase)',
     correctAnswer: 'parameterization',
     topic: 'Web Security',
-    explanation: 'Parameterized queries (prepared statements) separate SQL code from data, preventing injection attacks.'
+    explanation: 'Parameterized queries (prepared statements) separate SQL code from data, preventing injection attacks.',
+    difficulty: 'Hard'
   }
 ];
 
@@ -124,7 +137,8 @@ export const iotQuestions: Question[] = [
     options: ['HTTP', 'MQTT', 'FTP', 'SMTP'],
     correctAnswer: 1,
     topic: 'IoT Protocols',
-    explanation: 'MQTT (Message Queuing Telemetry Transport) is designed for low-bandwidth, high-latency networks, making it ideal for IoT.'
+    explanation: 'MQTT (Message Queuing Telemetry Transport) is designed for low-bandwidth, high-latency networks, making it ideal for IoT.',
+    difficulty: 'Easy'
   },
   {
     id: 'iot-2',
@@ -133,7 +147,8 @@ export const iotQuestions: Question[] = [
     options: ['Maximum throughput', 'Guaranteed response times', 'Multi-user support', 'High memory capacity'],
     correctAnswer: 1,
     topic: 'Real-time Processing',
-    explanation: 'RTOS prioritizes deterministic timing and guaranteed response times for time-critical applications.'
+    explanation: 'RTOS prioritizes deterministic timing and guaranteed response times for time-critical applications.',
+    difficulty: 'Medium'
   },
   {
     id: 'iot-3',
@@ -141,7 +156,8 @@ export const iotQuestions: Question[] = [
     question: 'In embedded C, what is the typical size (in bytes) of an unsigned char used to represent sensor readings?',
     correctAnswer: '1',
     topic: 'Embedded Systems',
-    explanation: 'An unsigned char is typically 1 byte (8 bits), allowing values from 0 to 255.'
+    explanation: 'An unsigned char is typically 1 byte (8 bits), allowing values from 0 to 255.',
+    difficulty: 'Easy'
   },
   {
     id: 'iot-4',
@@ -150,7 +166,8 @@ export const iotQuestions: Question[] = [
     options: ['WiFi 6', 'LoRaWAN', 'Bluetooth Classic', 'USB 3.0'],
     correctAnswer: 1,
     topic: 'IoT Protocols',
-    explanation: 'LoRaWAN enables long-range communication with minimal power consumption, ideal for remote IoT sensors.'
+    explanation: 'LoRaWAN enables long-range communication with minimal power consumption, ideal for remote IoT sensors.',
+    difficulty: 'Hard'
   },
   {
     id: 'iot-5',
@@ -158,7 +175,8 @@ export const iotQuestions: Question[] = [
     question: 'In I2C communication, how many wires are needed for data transfer (excluding power)? Enter a number.',
     correctAnswer: '2',
     topic: 'Embedded Systems',
-    explanation: 'I2C uses 2 wires: SDA (data line) and SCL (clock line) for bidirectional communication.'
+    explanation: 'I2C uses 2 wires: SDA (data line) and SCL (clock line) for bidirectional communication.',
+    difficulty: 'Medium'
   }
 ];
 
@@ -170,7 +188,8 @@ export const blockchainQuestions: Question[] = [
     options: ['Proof of Work', 'Proof of Stake', 'Delegated Proof of Stake', 'Proof of Authority'],
     correctAnswer: 1,
     topic: 'Consensus Mechanisms',
-    explanation: 'Ethereum 2.0 transitioned to Proof of Stake for improved energy efficiency and scalability.'
+    explanation: 'Ethereum 2.0 transitioned to Proof of Stake for improved energy efficiency and scalability.',
+    difficulty: 'Easy'
   },
   {
     id: 'blockchain-2',
@@ -179,7 +198,8 @@ export const blockchainQuestions: Question[] = [
     options: ['A legal document on blockchain', 'Self-executing code on blockchain', 'A type of cryptocurrency', 'A wallet address'],
     correctAnswer: 1,
     topic: 'Smart Contracts',
-    explanation: 'Smart contracts are self-executing programs stored on a blockchain that automatically enforce and execute agreement terms.'
+    explanation: 'Smart contracts are self-executing programs stored on a blockchain that automatically enforce and execute agreement terms.',
+    difficulty: 'Easy'
   },
   {
     id: 'blockchain-3',
@@ -187,7 +207,8 @@ export const blockchainQuestions: Question[] = [
     question: 'In Solidity, what keyword is used to make a function callable only by the contract owner? (Hint: it\'s a common modifier name)',
     correctAnswer: 'onlyOwner',
     topic: 'Smart Contracts',
-    explanation: 'onlyOwner is a common modifier pattern in Solidity that restricts function access to the contract owner.'
+    explanation: 'onlyOwner is a common modifier pattern in Solidity that restricts function access to the contract owner.',
+    difficulty: 'Medium'
   },
   {
     id: 'blockchain-4',
@@ -196,7 +217,8 @@ export const blockchainQuestions: Question[] = [
     options: ['10 million', '21 million', '100 million', 'Unlimited'],
     correctAnswer: 1,
     topic: 'Tokenomics',
-    explanation: 'Bitcoin has a hard cap of 21 million coins, making it a deflationary asset by design.'
+    explanation: 'Bitcoin has a hard cap of 21 million coins, making it a deflationary asset by design.',
+    difficulty: 'Medium'
   },
   {
     id: 'blockchain-5',
@@ -204,7 +226,8 @@ export const blockchainQuestions: Question[] = [
     question: 'What is the name of the standard for fungible tokens on Ethereum? (Format: ERC-XX)',
     correctAnswer: 'ERC-20',
     topic: 'Token Standards',
-    explanation: 'ERC-20 is the technical standard for fungible tokens on Ethereum, defining how tokens are transferred and tracked.'
+    explanation: 'ERC-20 is the technical standard for fungible tokens on Ethereum, defining how tokens are transferred and tracked.',
+    difficulty: 'Hard'
   }
 ];
 
