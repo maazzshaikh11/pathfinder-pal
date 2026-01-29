@@ -9,6 +9,7 @@ import {
   CheckCircle, XCircle, TrendingUp
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import CursorGlow from '@/components/CursorGlow';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const StudentDashboard = () => {
   if (!studentResult) {
     return (
       <div className="min-h-screen relative grid-pattern">
+        <CursorGlow color="primary" size={250} />
         <Navbar />
         <div className="relative z-10 container mx-auto px-4 pt-24 pb-12">
           <CyberCard variant="glow" className="max-w-md mx-auto text-center">
@@ -68,6 +70,7 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen relative grid-pattern">
+      <CursorGlow color="primary" size={250} />
       <Navbar />
       
       {/* Background */}

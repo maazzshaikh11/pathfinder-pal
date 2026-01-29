@@ -9,6 +9,7 @@ import {
   Target, TrendingUp, Award, AlertCircle
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import CursorGlow from '@/components/CursorGlow';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/authContext';
 import { analyzeResume, simulateResumeContent, ResumeAnalysis } from '@/lib/resumeScoring';
@@ -288,6 +289,7 @@ What would you like to know more about?`;
 
   return (
     <div className="min-h-screen relative grid-pattern">
+      <CursorGlow color="primary" size={250} />
       <Navbar />
       
       {/* Background effects */}

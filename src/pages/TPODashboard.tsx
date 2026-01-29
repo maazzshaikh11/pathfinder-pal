@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { getAllStats, mockStudents } from '@/lib/mockData';
 import Navbar from '@/components/Navbar';
+import CursorGlow from '@/components/CursorGlow';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell
@@ -33,6 +34,7 @@ const TPODashboard = () => {
 
   return (
     <div className="min-h-screen relative grid-pattern">
+      <CursorGlow color="accent" size={250} />
       <Navbar />
       
       {/* Background */}

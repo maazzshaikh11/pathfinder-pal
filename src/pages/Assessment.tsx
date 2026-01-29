@@ -11,6 +11,7 @@ import {
 import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, StudentResult, TrackType, DifficultyLevel } from '@/lib/mockData';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/Navbar';
+import CursorGlow from '@/components/CursorGlow';
 
 interface Answer {
   questionId: string;
@@ -154,6 +155,7 @@ const Assessment = () => {
     
     return (
       <div className="min-h-screen relative grid-pattern">
+        <CursorGlow color="primary" size={250} />
         <Navbar />
         
         <div className="relative z-10 container mx-auto px-4 pt-24 pb-12">
@@ -244,6 +246,7 @@ const Assessment = () => {
 
   return (
     <div className="min-h-screen relative grid-pattern">
+      <CursorGlow color="primary" size={250} />
       <Navbar />
       
       {/* Background */}
