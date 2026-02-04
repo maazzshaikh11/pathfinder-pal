@@ -1,16 +1,38 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { StudentResult } from './mockData';
+import { StudentResult, TrackType } from './mockData';
 
 export type UserRole = 'student' | 'tpo' | null;
+
+export interface AIPrediction {
+  level: 'Beginner' | 'Intermediate' | 'Ready';
+  confidence: number;
+  skillGaps: Array<{
+    skill: string;
+    gapType: 'Conceptual' | 'Practical';
+    priority: 'High' | 'Medium' | 'Low';
+  }>;
+  recommendations: string[];
+  estimatedReadinessWeeks: number;
+}
+
+export interface EnhancedStudentResult extends StudentResult {
+  aiPrediction?: AIPrediction;
+  questionResponses?: Array<{
+    questionId: string;
+    topic: string;
+    isCorrect: boolean;
+    difficulty: string;
+  }>;
+}
 
 interface AuthContextType {
   isLoggedIn: boolean;
   role: UserRole;
   username: string;
-  studentResult: StudentResult | null;
+  studentResult: EnhancedStudentResult | null;
   login: (username: string, role: UserRole) => void;
   logout: () => void;
-  setStudentResult: (result: StudentResult) => void;
+  setStudentResult: (result: EnhancedStudentResult) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<UserRole>(null);
   const [username, setUsername] = useState('');
-  const [studentResult, setStudentResultState] = useState<StudentResult | null>(null);
+  const [studentResult, setStudentResultState] = useState<EnhancedStudentResult | null>(null);
 
   const login = (username: string, role: UserRole) => {
     setIsLoggedIn(true);
@@ -34,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setStudentResultState(null);
   };
 
-  const setStudentResult = (result: StudentResult) => {
+  const setStudentResult = (result: EnhancedStudentResult) => {
     setStudentResultState(result);
   };
 

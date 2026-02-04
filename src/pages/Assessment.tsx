@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/lib/authContext';
+import { useAuth, AIPrediction, EnhancedStudentResult } from '@/lib/authContext';
 import { CyberCard } from '@/components/ui/CyberCard';
 import { CyberButton } from '@/components/ui/CyberButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, CheckCircle, XCircle, Brain, Shield, 
-  Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2, Zap
+  Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2, Zap,
+  Sparkles
 } from 'lucide-react';
-import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, StudentResult, TrackType, DifficultyLevel } from '@/lib/mockData';
+import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, TrackType, DifficultyLevel } from '@/lib/mockData';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Answer {
   questionId: string;
   answer: string | number;
   isCorrect: boolean;
+  topic: string;
+  difficulty: DifficultyLevel;
 }
 
 const getQuestionsForTrack = (track: TrackType): Question[] => {
@@ -59,6 +64,7 @@ const Assessment = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { username, setStudentResult } = useAuth();
+  const { toast } = useToast();
   
   const track = (location.state?.track as TrackType) || 'AI/ML';
   const questions = getQuestionsForTrack(track);
@@ -70,6 +76,8 @@ const Assessment = () => {
   const [codingAnswer, setCodingAnswer] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiPrediction, setAiPrediction] = useState<AIPrediction | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const question = questions[currentQuestion];
   const isLastQuestion = currentQuestion === questions.length - 1;
@@ -82,6 +90,7 @@ const Assessment = () => {
     setSelectedOption(null);
     setCodingAnswer('');
     setShowResults(false);
+    setAiPrediction(null);
   }, [track]);
 
   const handleAnswer = () => {
@@ -95,7 +104,9 @@ const Assessment = () => {
     const newAnswer: Answer = {
       questionId: question.id,
       answer: answer as string | number,
-      isCorrect
+      isCorrect,
+      topic: question.topic,
+      difficulty: question.difficulty
     };
     
     setAnswers([...answers, newAnswer]);
@@ -109,25 +120,130 @@ const Assessment = () => {
     }
   };
 
-  const handleSubmit = (finalAnswers: Answer[]) => {
+  const handleSubmit = async (finalAnswers: Answer[]) => {
     setIsSubmitting(true);
+    setIsAnalyzing(true);
     
-    setTimeout(() => {
-      const correctCount = finalAnswers.filter(a => a.isCorrect).length;
-      const gaps: string[] = [];
-      
-      finalAnswers.forEach((answer, index) => {
-        if (!answer.isCorrect) {
-          gaps.push(questions[index].topic);
+    const correctCount = finalAnswers.filter(a => a.isCorrect).length;
+    const gaps: string[] = [];
+    
+    finalAnswers.forEach((answer) => {
+      if (!answer.isCorrect) {
+        gaps.push(answer.topic);
+      }
+    });
+
+    const questionResponses = finalAnswers.map(a => ({
+      questionId: a.questionId,
+      topic: a.topic,
+      isCorrect: a.isCorrect,
+      difficulty: a.difficulty
+    }));
+
+    // Default level based on score
+    let level: 'Beginner' | 'Intermediate' | 'Ready';
+    if (correctCount <= 1) level = 'Beginner';
+    else if (correctCount <= 3) level = 'Intermediate';
+    else level = 'Ready';
+
+    try {
+      // First, ensure student exists in database
+      const { data: existingStudent } = await supabase
+        .from('students')
+        .select('id')
+        .eq('username', username)
+        .single();
+
+      let studentId: string;
+
+      if (!existingStudent) {
+        // Create student record
+        const { data: newStudent, error: studentError } = await supabase
+          .from('students')
+          .insert({
+            username,
+            email: `${username.toLowerCase().replace(' ', '.')}@college.edu`,
+            is_registered: true
+          })
+          .select('id')
+          .single();
+
+        if (studentError) {
+          console.error('Error creating student:', studentError);
+          throw studentError;
         }
-      });
+        studentId = newStudent.id;
+      } else {
+        studentId = existingStudent.id;
+      }
+
+      // Call AI prediction edge function
+      let prediction: AIPrediction | null = null;
       
-      let level: 'Beginner' | 'Intermediate' | 'Ready';
-      if (correctCount <= 1) level = 'Beginner';
-      else if (correctCount === 2) level = 'Intermediate';
-      else level = 'Ready';
-      
-      const result: StudentResult = {
+      try {
+        const predictionResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/skill-prediction`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            },
+            body: JSON.stringify({
+              studentUsername: username,
+              track,
+              correctAnswers: correctCount,
+              totalQuestions: questions.length,
+              gaps: [...new Set(gaps)],
+              questionResponses
+            })
+          }
+        );
+
+        if (predictionResponse.ok) {
+          const predictionData = await predictionResponse.json();
+          if (predictionData.success && predictionData.prediction) {
+            prediction = predictionData.prediction;
+            level = prediction.level; // Use AI-predicted level
+            setAiPrediction(prediction);
+          }
+        } else if (predictionResponse.status === 429) {
+          toast({
+            title: "AI Analysis Rate Limited",
+            description: "Using standard scoring. AI analysis will be available shortly.",
+            variant: "default"
+          });
+        }
+      } catch (aiError) {
+        console.error('AI prediction error:', aiError);
+        // Continue with standard scoring
+      }
+
+      // Save assessment result to database
+      const { error: resultError } = await supabase
+        .from('assessment_results')
+        .insert({
+          student_username: username,
+          track,
+          correct_answers: correctCount,
+          total_questions: questions.length,
+          level,
+          gaps: [...new Set(gaps)] as unknown as string,
+          question_responses: questionResponses as unknown as string,
+          ai_prediction: prediction as unknown as string,
+          confidence_score: prediction?.confidence || null
+        });
+      if (resultError) {
+        console.error('Error saving assessment:', resultError);
+        toast({
+          title: "Warning",
+          description: "Assessment completed but couldn't save to database.",
+          variant: "destructive"
+        });
+      }
+
+      // Set result in context
+      const result: EnhancedStudentResult = {
         id: `result-${Date.now()}`,
         user: username,
         email: `${username.toLowerCase().replace(' ', '.')}@college.edu`,
@@ -136,13 +252,25 @@ const Assessment = () => {
         total: questions.length,
         gaps: [...new Set(gaps)],
         level,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        aiPrediction: prediction || undefined,
+        questionResponses
       };
       
       setStudentResult(result);
       setShowResults(true);
+      
+    } catch (error) {
+      console.error('Assessment submission error:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+      setIsAnalyzing(false);
+    }
   };
 
   const viewDashboard = () => {
@@ -151,7 +279,7 @@ const Assessment = () => {
 
   if (showResults) {
     const correctCount = answers.filter(a => a.isCorrect).length;
-    const level = correctCount <= 1 ? 'Beginner' : correctCount === 2 ? 'Intermediate' : 'Ready';
+    const level = aiPrediction?.level || (correctCount <= 1 ? 'Beginner' : correctCount <= 3 ? 'Intermediate' : 'Ready');
     
     return (
       <div className="min-h-screen relative grid-pattern">
@@ -183,7 +311,21 @@ const Assessment = () => {
               </motion.div>
               
               <h1 className="font-display text-3xl font-bold mb-2">Assessment Complete</h1>
-              <p className="text-muted-foreground mb-8">Your results have been analyzed</p>
+              <p className="text-muted-foreground mb-4">Your results have been analyzed</p>
+              
+              {/* AI Analysis Badge */}
+              {aiPrediction && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mb-6"
+                >
+                  <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                  <span className="text-sm font-medium text-primary">
+                    AI Analysis: {aiPrediction.confidence.toFixed(0)}% Confidence
+                  </span>
+                </motion.div>
+              )}
               
               <div className="grid grid-cols-3 gap-4 mb-8">
                 <div className="p-4 rounded-lg bg-muted/50 border border-border">
@@ -196,13 +338,30 @@ const Assessment = () => {
                     level === 'Intermediate' ? 'text-accent' : 
                     'text-primary'
                   }`}>{level}</p>
-                  <p className="text-sm text-muted-foreground">Level</p>
+                  <p className="text-sm text-muted-foreground">
+                    {aiPrediction ? 'AI Level' : 'Level'}
+                  </p>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/50 border border-border">
                   <p className="text-xl font-display font-bold text-foreground">{track}</p>
                   <p className="text-sm text-muted-foreground">Track</p>
                 </div>
               </div>
+
+              {/* Estimated Readiness */}
+              {aiPrediction && aiPrediction.estimatedReadinessWeeks > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="p-4 rounded-lg bg-accent/10 border border-accent/30 mb-6"
+                >
+                  <p className="text-sm text-muted-foreground">Estimated time to Placement Ready</p>
+                  <p className="text-2xl font-display font-bold text-accent">
+                    {aiPrediction.estimatedReadinessWeeks} weeks
+                  </p>
+                </motion.div>
+              )}
               
               {/* Question breakdown */}
               <div className="space-y-3 mb-8 text-left">
@@ -222,8 +381,15 @@ const Assessment = () => {
                       ) : (
                         <XCircle className="w-5 h-5 text-destructive mt-0.5" />
                       )}
-                      <div>
-                        <p className="font-medium text-sm">{questions[index].topic}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm">{questions[index].topic}</p>
+                          {aiPrediction && !answer.isCorrect && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                              {aiPrediction.skillGaps.find(g => g.skill === answer.topic)?.gapType || 'Gap'}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           {questions[index].explanation}
                         </p>
@@ -285,6 +451,33 @@ const Assessment = () => {
             />
           </div>
         </motion.div>
+
+        {/* Analyzing Overlay */}
+        {isAnalyzing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          >
+            <CyberCard variant="glow" className="text-center max-w-md">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 mx-auto mb-4"
+              >
+                <Brain className="w-16 h-16 text-primary" />
+              </motion.div>
+              <h3 className="font-display text-xl font-bold mb-2">AI Analyzing Your Performance</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Using machine learning to predict your placement readiness...
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-sm text-primary">Processing with Gemini AI</span>
+              </div>
+            </CyberCard>
+          </motion.div>
+        )}
 
         {/* Question Card */}
         <AnimatePresence mode="wait">
