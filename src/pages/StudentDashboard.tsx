@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/lib/authContext';
+import { useAuth, AIPrediction } from '@/lib/authContext';
 import { CyberCard } from '@/components/ui/CyberCard';
 import { CyberButton } from '@/components/ui/CyberButton';
 import { motion } from 'framer-motion';
 import { 
   Brain, Shield, Trophy, Target, AlertCircle, 
   ArrowRight, BookOpen, Video, FileText, RefreshCw,
-  CheckCircle, XCircle, TrendingUp
+  CheckCircle, XCircle, TrendingUp, Sparkles, Clock, Cpu, Link2
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
@@ -35,7 +35,19 @@ const StudentDashboard = () => {
     );
   }
 
-  const { track, correct, total, gaps, level } = studentResult;
+  const { track, correct, total, gaps, level, aiPrediction } = studentResult;
+  
+  const getTrackIcon = () => {
+    switch (track) {
+      case 'AI/ML': return Brain;
+      case 'Cybersecurity': return Shield;
+      case 'Systems & IoT': return Cpu;
+      case 'Blockchain': return Link2;
+      default: return Brain;
+    }
+  };
+  
+  const TrackIcon = getTrackIcon();
   const isAiMl = track === 'AI/ML';
 
   const nextSteps = {
@@ -68,6 +80,15 @@ const StudentDashboard = () => {
     return 'bg-primary/20 border-primary/50';
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'High': return 'text-destructive bg-destructive/20 border-destructive/30';
+      case 'Medium': return 'text-accent bg-accent/20 border-accent/30';
+      case 'Low': return 'text-success bg-success/20 border-success/30';
+      default: return 'text-muted-foreground bg-muted border-border';
+    }
+  };
+
   return (
     <div className="min-h-screen relative grid-pattern">
       <CursorGlow color="primary" size={250} />
@@ -94,10 +115,28 @@ const StudentDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-            Welcome back, <span className="text-glow">{username}</span>
-          </h1>
-          <p className="text-muted-foreground">Your personalized skill assessment dashboard</p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
+                Welcome back, <span className="text-glow">{username}</span>
+              </h1>
+              <p className="text-muted-foreground">Your personalized skill assessment dashboard</p>
+            </div>
+            
+            {/* AI Analysis Badge */}
+            {aiPrediction && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30"
+              >
+                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-sm font-medium text-primary">
+                  AI Powered Analysis
+                </span>
+              </motion.div>
+            )}
+          </div>
         </motion.div>
 
         {/* Stats Grid */}
@@ -105,7 +144,7 @@ const StudentDashboard = () => {
           {/* Track */}
           <CyberCard delay={0.1} className="text-center">
             <div className={`w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center ${isAiMl ? 'bg-primary/20 border-primary/50' : 'bg-accent/20 border-accent/50'} border`}>
-              {isAiMl ? <Brain className="w-6 h-6 text-primary" /> : <Shield className="w-6 h-6 text-accent" />}
+              <TrackIcon className={`w-6 h-6 ${isAiMl ? 'text-primary' : 'text-accent'}`} />
             </div>
             <p className="font-display font-bold text-xl">{track}</p>
             <p className="text-sm text-muted-foreground">Selected Track</p>
@@ -117,7 +156,9 @@ const StudentDashboard = () => {
               <Trophy className={`w-6 h-6 ${getLevelColor()}`} />
             </div>
             <p className={`font-display font-bold text-xl ${getLevelColor()}`}>{level}</p>
-            <p className="text-sm text-muted-foreground">Current Level</p>
+            <p className="text-sm text-muted-foreground">
+              {aiPrediction ? 'AI Predicted Level' : 'Current Level'}
+            </p>
           </CyberCard>
 
           {/* Score */}
@@ -129,15 +170,51 @@ const StudentDashboard = () => {
             <p className="text-sm text-muted-foreground">Questions Correct</p>
           </CyberCard>
 
-          {/* Gaps */}
+          {/* Confidence or Gaps */}
           <CyberCard delay={0.25} className="text-center">
-            <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-destructive/20 border-destructive/50 border">
-              <AlertCircle className="w-6 h-6 text-destructive" />
-            </div>
-            <p className="font-display font-bold text-xl">{gaps.length}</p>
-            <p className="text-sm text-muted-foreground">Skill Gaps Found</p>
+            {aiPrediction ? (
+              <>
+                <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-success/20 border-success/50 border">
+                  <Sparkles className="w-6 h-6 text-success" />
+                </div>
+                <p className="font-display font-bold text-xl">{aiPrediction.confidence.toFixed(0)}%</p>
+                <p className="text-sm text-muted-foreground">AI Confidence</p>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-destructive/20 border-destructive/50 border">
+                  <AlertCircle className="w-6 h-6 text-destructive" />
+                </div>
+                <p className="font-display font-bold text-xl">{gaps.length}</p>
+                <p className="text-sm text-muted-foreground">Skill Gaps Found</p>
+              </>
+            )}
           </CyberCard>
         </div>
+
+        {/* Estimated Readiness Time */}
+        {aiPrediction && aiPrediction.estimatedReadinessWeeks > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8"
+          >
+            <CyberCard className="bg-gradient-to-r from-accent/10 via-card to-primary/10 border-accent/30">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-accent/20 border border-accent/50">
+                  <Clock className="w-7 h-7 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Estimated Time to Placement Ready</p>
+                  <p className="font-display text-2xl font-bold text-accent">
+                    {aiPrediction.estimatedReadinessWeeks} weeks
+                  </p>
+                </div>
+              </div>
+            </CyberCard>
+          </motion.div>
+        )}
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Skill Gaps */}
@@ -147,7 +224,31 @@ const StudentDashboard = () => {
               <h2 className="font-display text-xl font-bold">Identified Skill Gaps</h2>
             </div>
 
-            {gaps.length > 0 ? (
+            {/* AI-enhanced skill gaps with priorities */}
+            {aiPrediction && aiPrediction.skillGaps.length > 0 ? (
+              <div className="space-y-3">
+                {aiPrediction.skillGaps.map((gap, index) => (
+                  <motion.div
+                    key={gap.skill}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                    className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/30"
+                  >
+                    <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{gap.skill}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {gap.gapType} Gap
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(gap.priority)}`}>
+                      {gap.priority}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            ) : gaps.length > 0 ? (
               <div className="space-y-3">
                 {gaps.map((gap, index) => (
                   <motion.div
@@ -185,38 +286,68 @@ const StudentDashboard = () => {
             </div>
           </CyberCard>
 
-          {/* Next Steps */}
+          {/* AI Recommendations or Next Steps */}
           <CyberCard delay={0.35}>
             <div className="flex items-center gap-3 mb-6">
-              <TrendingUp className="w-5 h-5 text-success" />
-              <h2 className="font-display text-xl font-bold">Recommended Next Steps</h2>
+              {aiPrediction ? (
+                <>
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h2 className="font-display text-xl font-bold">AI Recommendations</h2>
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-5 h-5 text-success" />
+                  <h2 className="font-display text-xl font-bold">Recommended Next Steps</h2>
+                </>
+              )}
             </div>
 
             <div className="space-y-4">
-              {nextSteps[level].map((step, index) => (
-                <motion.div
-                  key={step.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  className="group p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/50 transition-all cursor-pointer"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/50 flex items-center justify-center group-hover:glow-primary transition-all">
-                      <step.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{step.title}</p>
-                        <span className="text-xs font-mono px-2 py-1 rounded bg-muted text-muted-foreground">
-                          {step.type}
-                        </span>
+              {aiPrediction ? (
+                // Show AI-generated recommendations
+                aiPrediction.recommendations.map((rec, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    className="group p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/50 transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/50 flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary font-bold text-sm">{index + 1}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{step.desc}</p>
+                      <p className="text-sm leading-relaxed">{rec}</p>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              ) : (
+                // Show default next steps based on level
+                nextSteps[level].map((step, index) => (
+                  <motion.div
+                    key={step.title}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    className="group p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/50 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/50 flex items-center justify-center group-hover:glow-primary transition-all">
+                        <step.icon className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">{step.title}</p>
+                          <span className="text-xs font-mono px-2 py-1 rounded bg-muted text-muted-foreground">
+                            {step.type}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{step.desc}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </CyberCard>
         </div>
