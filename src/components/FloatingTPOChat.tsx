@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Shield, Circle, Loader2 } from 'lucide-react';
 import { CyberButton } from '@/components/ui/CyberButton';
@@ -18,7 +18,7 @@ interface Message {
 }
 
 const FloatingTPOChat = () => {
-  const { username, isLoggedIn } = useAuth();
+  const { username } = useAuth();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -30,11 +30,38 @@ const FloatingTPOChat = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const tpoUsername = 'TPO Admin';
 
-  const hasValidUsername = Boolean(username && username.trim());
+  // Memoize the fetch function
+  const fetchMessages = useCallback(async () => {
+    if (!username || !username.trim()) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`sender_username.eq."${username}",recipient_username.eq."${username}"`)
+        .order('created_at', { ascending: true });
 
-  // Fetch unread count on mount
+      if (error) throw error;
+      setMessages(data || []);
+
+      // Mark TPO messages as read
+      await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('recipient_username', username)
+        .eq('sender_role', 'tpo');
+      
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [username]);
+
+  // Fetch unread count and subscribe to messages
   useEffect(() => {
-    if (!hasValidUsername) return;
+    if (!username || !username.trim()) return;
     
     const fetchUnread = async () => {
       const { count } = await supabase
@@ -74,50 +101,22 @@ const FloatingTPOChat = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [username, isOpen, hasValidUsername]);
+  }, [username, isOpen]);
 
+  // Fetch messages when chat opens
   useEffect(() => {
-    if (isOpen && hasValidUsername) {
+    if (isOpen && username && username.trim()) {
       fetchMessages();
     }
-  }, [isOpen, hasValidUsername]);
+  }, [isOpen, username, fetchMessages]);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fetch messages when chat opens
-  const fetchMessages = async () => {
-    if (!hasValidUsername) return;
-    setLoading(true);
-    try {
-      // Fetch messages where user is sender OR recipient
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`sender_username.eq."${username}",recipient_username.eq."${username}"`)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setMessages(data || []);
-
-      // Mark TPO messages as read
-      await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('recipient_username', username)
-        .eq('sender_role', 'tpo');
-      
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !hasValidUsername) return;
+    if (!newMessage.trim() || !username || !username.trim()) return;
 
     setSending(true);
     try {
@@ -149,8 +148,8 @@ const FloatingTPOChat = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Don't render if no valid username
-  if (!hasValidUsername) {
+  // Don't render if no valid username - AFTER all hooks
+  if (!username || !username.trim()) {
     return null;
   }
 
