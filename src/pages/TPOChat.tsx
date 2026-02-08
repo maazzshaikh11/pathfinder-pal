@@ -53,11 +53,12 @@ const TPOChat = () => {
 
   // Fetch all conversations
   const fetchConversations = async () => {
+    if (!username) return;
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_role.eq.student,recipient_username.eq.${username}`)
+        .or(`sender_role.eq.student,recipient_username.eq."${username}"`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -93,11 +94,12 @@ const TPOChat = () => {
 
   // Fetch messages for selected student
   const fetchMessages = async (studentUsername: string) => {
+    if (!username) return;
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`and(sender_username.eq.${studentUsername},recipient_username.eq.${username}),and(sender_username.eq.${username},recipient_username.eq.${studentUsername})`)
+        .or(`and(sender_username.eq."${studentUsername}",recipient_username.eq."${username}"),and(sender_username.eq."${username}",recipient_username.eq."${studentUsername}")`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
