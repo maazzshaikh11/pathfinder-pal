@@ -45,11 +45,12 @@ const StudentChat = () => {
 
   // Fetch messages
   const fetchMessages = async () => {
+    if (!username) return;
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_username.eq.${username},recipient_username.eq.${username}`)
+        .or(`sender_username.eq."${username}",recipient_username.eq."${username}"`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
