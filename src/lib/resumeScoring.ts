@@ -16,25 +16,25 @@ export interface ResumeAnalysis {
 
 // Skills required for each track
 const trackSkills: Record<TrackType, string[]> = {
-  'AI/ML': [
+  'Programming & DSA': [
+    'c', 'c++', 'java', 'python', 'data structures', 'algorithms',
+    'arrays', 'linked list', 'trees', 'graphs', 'dynamic programming',
+    'sorting', 'searching', 'recursion', 'competitive programming'
+  ],
+  'Data Science & ML': [
     'python', 'tensorflow', 'pytorch', 'machine learning', 'deep learning',
     'neural networks', 'data science', 'pandas', 'numpy', 'scikit-learn',
     'nlp', 'computer vision', 'keras', 'jupyter', 'data analysis'
   ],
-  'Cybersecurity': [
-    'network security', 'penetration testing', 'cryptography', 'firewalls',
-    'linux', 'python', 'wireshark', 'security', 'ethical hacking', 'sql',
-    'vulnerability', 'encryption', 'authentication', 'owasp', 'kali'
+  'Database Management & SQL': [
+    'sql', 'mysql', 'postgresql', 'mongodb', 'database', 'normalization',
+    'indexing', 'query optimization', 'joins', 'stored procedures',
+    'nosql', 'redis', 'data modeling', 'acid', 'transactions'
   ],
-  'Systems & IoT': [
-    'embedded systems', 'arduino', 'raspberry pi', 'mqtt', 'sensors',
-    'c', 'c++', 'python', 'microcontrollers', 'rtos', 'iot', 'protocols',
-    'hardware', 'circuits', 'firmware'
-  ],
-  'Blockchain': [
-    'solidity', 'ethereum', 'smart contracts', 'web3', 'defi',
-    'javascript', 'typescript', 'cryptocurrency', 'blockchain', 'nft',
-    'metamask', 'truffle', 'hardhat', 'rust', 'node.js'
+  'Backend / Web Dev': [
+    'node.js', 'express', 'rest api', 'graphql', 'javascript', 'typescript',
+    'docker', 'git', 'ci/cd', 'microservices', 'authentication', 'jwt',
+    'websockets', 'nginx', 'aws'
   ]
 };
 

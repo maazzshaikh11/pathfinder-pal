@@ -2,7 +2,7 @@ import { CyberCard } from '@/components/ui/CyberCard';
 import { motion } from 'framer-motion';
 import { 
   Users, Brain, Shield, TrendingUp, AlertTriangle, 
-  BarChart3, PieChart, Target, BookOpen
+  BarChart3, PieChart, Target, BookOpen, Code, Database, Server
 } from 'lucide-react';
 import { getAllStats, mockStudents } from '@/lib/mockData';
 import Navbar from '@/components/Navbar';
@@ -16,20 +16,32 @@ const TPODashboard = () => {
   const stats = getAllStats();
   
   const levelData = [
-    { name: 'Beginner', aiml: stats.aiml.levelCounts.Beginner, cyber: stats.cybersecurity.levelCounts.Beginner },
-    { name: 'Intermediate', aiml: stats.aiml.levelCounts.Intermediate, cyber: stats.cybersecurity.levelCounts.Intermediate },
-    { name: 'Ready', aiml: stats.aiml.levelCounts.Ready, cyber: stats.cybersecurity.levelCounts.Ready },
+    { name: 'Beginner', prog: stats.programming.levelCounts.Beginner, dsml: stats.datascience.levelCounts.Beginner, db: stats.database.levelCounts.Beginner, backend: stats.backend.levelCounts.Beginner },
+    { name: 'Intermediate', prog: stats.programming.levelCounts.Intermediate, dsml: stats.datascience.levelCounts.Intermediate, db: stats.database.levelCounts.Intermediate, backend: stats.backend.levelCounts.Intermediate },
+    { name: 'Ready', prog: stats.programming.levelCounts.Ready, dsml: stats.datascience.levelCounts.Ready, db: stats.database.levelCounts.Ready, backend: stats.backend.levelCounts.Ready },
   ];
 
   const trackDistribution = [
-    { name: 'AI/ML', value: stats.aiml.total, color: 'hsl(180, 100%, 50%)' },
-    { name: 'Cybersecurity', value: stats.cybersecurity.total, color: 'hsl(35, 100%, 55%)' },
+    { name: 'Programming & DSA', value: stats.programming.total, color: 'hsl(180, 100%, 50%)' },
+    { name: 'Data Science & ML', value: stats.datascience.total, color: 'hsl(35, 100%, 55%)' },
+    { name: 'Database & SQL', value: stats.database.total, color: 'hsl(145, 80%, 45%)' },
+    { name: 'Backend / Web Dev', value: stats.backend.total, color: 'hsl(330, 100%, 60%)' },
   ];
 
   const levelColors = {
     Beginner: 'hsl(180, 100%, 50%)',
     Intermediate: 'hsl(35, 100%, 55%)',
     Ready: 'hsl(145, 80%, 45%)',
+  };
+
+  const getTrackStyle = (track: string) => {
+    switch (track) {
+      case 'Programming & DSA': return { bg: 'bg-primary/20 text-primary border-primary/30', icon: Code };
+      case 'Data Science & ML': return { bg: 'bg-accent/20 text-accent border-accent/30', icon: Brain };
+      case 'Database Management & SQL': return { bg: 'bg-secondary/20 text-secondary border-secondary/30', icon: Database };
+      case 'Backend / Web Dev': return { bg: 'bg-tertiary/20 text-tertiary border-tertiary/30', icon: Server };
+      default: return { bg: 'bg-primary/20 text-primary border-primary/30', icon: Code };
+    }
   };
 
   return (
@@ -68,7 +80,7 @@ const TPODashboard = () => {
         </motion.div>
 
         {/* Overview Stats */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+        <div className="grid md:grid-cols-5 gap-4 mb-8">
           <CyberCard delay={0.1} className="text-center">
             <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-primary/20 border-primary/50 border">
               <Users className="w-6 h-6 text-primary" />
@@ -79,18 +91,26 @@ const TPODashboard = () => {
 
           <CyberCard delay={0.15} className="text-center">
             <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-primary/20 border-primary/50 border">
-              <Brain className="w-6 h-6 text-primary" />
+              <Code className="w-6 h-6 text-primary" />
             </div>
-            <p className="font-display font-bold text-3xl">{stats.aiml.total}</p>
-            <p className="text-sm text-muted-foreground">AI/ML Track</p>
+            <p className="font-display font-bold text-3xl">{stats.programming.total}</p>
+            <p className="text-sm text-muted-foreground">Programming & DSA</p>
           </CyberCard>
 
           <CyberCard delay={0.2} className="text-center">
             <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-accent/20 border-accent/50 border">
-              <Shield className="w-6 h-6 text-accent" />
+              <Brain className="w-6 h-6 text-accent" />
             </div>
-            <p className="font-display font-bold text-3xl">{stats.cybersecurity.total}</p>
-            <p className="text-sm text-muted-foreground">Cybersecurity Track</p>
+            <p className="font-display font-bold text-3xl">{stats.datascience.total}</p>
+            <p className="text-sm text-muted-foreground">Data Science & ML</p>
+          </CyberCard>
+
+          <CyberCard delay={0.22} className="text-center">
+            <div className="w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center bg-secondary/20 border-secondary/50 border">
+              <Database className="w-6 h-6 text-secondary" />
+            </div>
+            <p className="font-display font-bold text-3xl">{stats.database.total}</p>
+            <p className="text-sm text-muted-foreground">Database & SQL</p>
           </CyberCard>
 
           <CyberCard delay={0.25} className="text-center">
@@ -98,7 +118,7 @@ const TPODashboard = () => {
               <TrendingUp className="w-6 h-6 text-success" />
             </div>
             <p className="font-display font-bold text-3xl">
-              {Math.round((stats.aiml.levelCounts.Ready + stats.cybersecurity.levelCounts.Ready) / stats.totalStudents * 100)}%
+              {Math.round((stats.programming.levelCounts.Ready + stats.datascience.levelCounts.Ready + stats.database.levelCounts.Ready + stats.backend.levelCounts.Ready) / stats.totalStudents * 100)}%
             </p>
             <p className="text-sm text-muted-foreground">Placement Ready</p>
           </CyberCard>
@@ -114,7 +134,7 @@ const TPODashboard = () => {
             </div>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={levelData} barGap={8}>
+                <BarChart data={levelData} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
                   <XAxis 
                     dataKey="name" 
@@ -137,8 +157,10 @@ const TPODashboard = () => {
                   <Legend 
                     wrapperStyle={{ fontFamily: 'Rajdhani' }}
                   />
-                  <Bar dataKey="aiml" name="AI/ML" fill="hsl(180, 100%, 50%)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cyber" name="Cybersecurity" fill="hsl(35, 100%, 55%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="prog" name="Programming & DSA" fill="hsl(180, 100%, 50%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="dsml" name="Data Science & ML" fill="hsl(35, 100%, 55%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="db" name="Database & SQL" fill="hsl(145, 80%, 45%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="backend" name="Backend / Web Dev" fill="hsl(330, 100%, 60%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -179,7 +201,7 @@ const TPODashboard = () => {
                 </RechartsPie>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-8 mt-4">
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
               {trackDistribution.map((track) => (
                 <div key={track.name} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: track.color }} />
@@ -231,7 +253,7 @@ const TPODashboard = () => {
             </div>
             <div className="space-y-6">
               {(['Beginner', 'Intermediate', 'Ready'] as const).map((level) => {
-                const count = stats.aiml.levelCounts[level] + stats.cybersecurity.levelCounts[level];
+                const count = stats.programming.levelCounts[level] + stats.datascience.levelCounts[level] + stats.database.levelCounts[level] + stats.backend.levelCounts[level];
                 const percentage = Math.round((count / stats.totalStudents) * 100);
                 return (
                   <div key={level}>
@@ -285,55 +307,55 @@ const TPODashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {mockStudents.slice(0, 10).map((student, index) => (
-                  <motion.tr
-                    key={student.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 + index * 0.05 }}
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="py-3 px-4">
-                      <div>
-                        <p className="font-medium">{student.user}</p>
-                        <p className="text-xs text-muted-foreground">{student.email}</p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono ${
-                        student.track === 'AI/ML' 
-                          ? 'bg-primary/20 text-primary border border-primary/30' 
-                          : 'bg-accent/20 text-accent border border-accent/30'
-                      }`}>
-                        {student.track === 'AI/ML' ? <Brain className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
-                        {student.track}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono">{student.correct}/{student.total}</td>
-                    <td className="py-3 px-4">
-                      <span 
-                        className="font-medium"
-                        style={{ color: levelColors[student.level] }}
-                      >
-                        {student.level}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-wrap gap-1">
-                        {student.gaps.length > 0 ? student.gaps.map((gap) => (
-                          <span 
-                            key={gap} 
-                            className="px-2 py-0.5 text-xs rounded bg-destructive/20 text-destructive border border-destructive/30"
-                          >
-                            {gap}
-                          </span>
-                        )) : (
-                          <span className="text-xs text-muted-foreground">None</span>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                {mockStudents.slice(0, 10).map((student, index) => {
+                  const trackStyle = getTrackStyle(student.track);
+                  const TrackIcon = trackStyle.icon;
+                  return (
+                    <motion.tr
+                      key={student.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 + index * 0.05 }}
+                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium">{student.user}</p>
+                          <p className="text-xs text-muted-foreground">{student.email}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono border ${trackStyle.bg}`}>
+                          <TrackIcon className="w-3 h-3" />
+                          {student.track}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono">{student.correct}/{student.total}</td>
+                      <td className="py-3 px-4">
+                        <span 
+                          className="font-medium"
+                          style={{ color: levelColors[student.level] }}
+                        >
+                          {student.level}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {student.gaps.length > 0 ? student.gaps.map((gap) => (
+                            <span 
+                              key={gap} 
+                              className="px-2 py-0.5 text-xs rounded bg-destructive/20 text-destructive border border-destructive/30"
+                            >
+                              {gap}
+                            </span>
+                          )) : (
+                            <span className="text-xs text-muted-foreground">None</span>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

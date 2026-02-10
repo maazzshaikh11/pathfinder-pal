@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, CheckCircle, XCircle, Brain, Shield, 
   Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2, Zap,
-  Sparkles
+  Sparkles, Database, Server
 } from 'lucide-react';
-import { aiMlQuestions, cybersecurityQuestions, iotQuestions, blockchainQuestions, Question, TrackType, DifficultyLevel } from '@/lib/mockData';
+import { programmingDsaQuestions, dataScienceMlQuestions, databaseSqlQuestions, backendWebDevQuestions, Question, TrackType, DifficultyLevel } from '@/lib/mockData';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
@@ -26,26 +26,26 @@ interface Answer {
 
 const getQuestionsForTrack = (track: TrackType): Question[] => {
   switch (track) {
-    case 'AI/ML': return aiMlQuestions;
-    case 'Cybersecurity': return cybersecurityQuestions;
-    case 'Systems & IoT': return iotQuestions;
-    case 'Blockchain': return blockchainQuestions;
-    default: return aiMlQuestions;
+    case 'Programming & DSA': return programmingDsaQuestions;
+    case 'Data Science & ML': return dataScienceMlQuestions;
+    case 'Database Management & SQL': return databaseSqlQuestions;
+    case 'Backend / Web Dev': return backendWebDevQuestions;
+    default: return programmingDsaQuestions;
   }
 };
 
 const getTrackConfig = (track: TrackType) => {
   switch (track) {
-    case 'AI/ML': 
-      return { icon: Brain, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
-    case 'Cybersecurity': 
-      return { icon: Shield, color: 'accent', variant: 'accent' as const, buttonVariant: 'accent' as const };
-    case 'Systems & IoT': 
-      return { icon: Cpu, color: 'secondary', variant: 'secondary' as const, buttonVariant: 'secondary' as const };
-    case 'Blockchain': 
-      return { icon: Link2, color: 'tertiary', variant: 'tertiary' as const, buttonVariant: 'tertiary' as const };
+    case 'Programming & DSA': 
+      return { icon: Code, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
+    case 'Data Science & ML': 
+      return { icon: Brain, color: 'accent', variant: 'accent' as const, buttonVariant: 'accent' as const };
+    case 'Database Management & SQL': 
+      return { icon: Database, color: 'secondary', variant: 'secondary' as const, buttonVariant: 'secondary' as const };
+    case 'Backend / Web Dev': 
+      return { icon: Server, color: 'tertiary', variant: 'tertiary' as const, buttonVariant: 'tertiary' as const };
     default: 
-      return { icon: Brain, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
+      return { icon: Code, color: 'primary', variant: 'glow' as const, buttonVariant: 'primary' as const };
   }
 };
 
@@ -66,7 +66,7 @@ const Assessment = () => {
   const { username, setStudentResult } = useAuth();
   const { toast } = useToast();
   
-  const track = (location.state?.track as TrackType) || 'AI/ML';
+  const track = (location.state?.track as TrackType) || 'Programming & DSA';
   const questions = getQuestionsForTrack(track);
   const trackConfig = getTrackConfig(track);
   

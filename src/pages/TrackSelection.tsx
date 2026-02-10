@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, Shield, Cpu, Lock, ArrowRight, Sparkles, Code, Wifi, Link2,
   Upload, FileText, MessageSquare, Check, X, Bot, Send, Loader2, 
-  Target, TrendingUp, Award, AlertCircle
+  Target, TrendingUp, Award, AlertCircle, Database, Server, Binary
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { useResumeChat } from '@/hooks/useResumeChat';
 import ReactMarkdown from 'react-markdown';
 
-type TrackId = 'AI/ML' | 'Cybersecurity' | 'Systems & IoT' | 'Blockchain';
+type TrackId = 'Programming & DSA' | 'Data Science & ML' | 'Database Management & SQL' | 'Backend / Web Dev';
 
 interface Track {
   id: TrackId;
@@ -34,43 +34,43 @@ interface Track {
 
 const tracks: Track[] = [
   {
-    id: 'AI/ML',
-    title: 'AI / ML',
-    subtitle: 'Artificial Intelligence & Machine Learning',
-    icon: Brain,
-    secondaryIcon: Sparkles,
-    description: 'Evaluate your understanding of machine learning algorithms, neural networks, and model evaluation techniques.',
-    topics: ['Neural Networks', 'Model Evaluation', 'Feature Engineering', 'Activation Functions'],
+    id: 'Programming & DSA',
+    title: 'Programming & DSA',
+    subtitle: 'Data Structures, Algorithms & Problem Solving',
+    icon: Code,
+    secondaryIcon: Binary,
+    description: 'Test your skills in arrays, trees, graphs, sorting, dynamic programming, and competitive coding concepts.',
+    topics: ['Sorting Algorithms', 'Graph Algorithms', 'Dynamic Programming', 'Heaps & Priority Queues'],
     color: 'primary'
   },
   {
-    id: 'Cybersecurity',
-    title: 'Cybersecurity',
-    subtitle: 'Security & Cryptography',
-    icon: Shield,
-    secondaryIcon: Lock,
-    description: 'Test your knowledge of web security, network protocols, cryptography, and threat detection.',
-    topics: ['Web Security', 'Cryptography', 'Network Security', 'Authentication'],
+    id: 'Data Science & ML',
+    title: 'Data Science & ML',
+    subtitle: 'Machine Learning, Deep Learning & Analytics',
+    icon: Brain,
+    secondaryIcon: Sparkles,
+    description: 'Evaluate your understanding of ML algorithms, neural networks, model evaluation, and data analysis techniques.',
+    topics: ['Neural Networks', 'Model Evaluation', 'Deep Learning', 'Activation Functions'],
     color: 'accent'
   },
   {
-    id: 'Systems & IoT',
-    title: 'Systems & IoT',
-    subtitle: 'Embedded systems, IoT protocols, and real-time processing',
-    icon: Cpu,
-    secondaryIcon: Wifi,
-    description: 'Assess your expertise in embedded systems, sensor networks, communication protocols, and real-time data processing.',
-    topics: ['Embedded Systems', 'IoT Protocols', 'Real-time Processing', 'Sensor Networks'],
+    id: 'Database Management & SQL',
+    title: 'Database & SQL',
+    subtitle: 'SQL, Normalization, Indexing & Transactions',
+    icon: Database,
+    secondaryIcon: Lock,
+    description: 'Assess your knowledge of relational databases, SQL queries, normalization, indexing, and ACID properties.',
+    topics: ['Normalization', 'SQL Joins', 'Transactions & ACID', 'Indexing & Optimization'],
     color: 'secondary'
   },
   {
-    id: 'Blockchain',
-    title: 'Blockchain',
-    subtitle: 'Smart contracts, consensus mechanisms, and DeFi',
-    icon: Link2,
-    secondaryIcon: Lock,
-    description: 'Evaluate your understanding of blockchain technology, smart contract development, and decentralized finance concepts.',
-    topics: ['Smart Contracts', 'Consensus Mechanisms', 'DeFi', 'Cryptographic Hashing'],
+    id: 'Backend / Web Dev',
+    title: 'Backend / Web Dev',
+    subtitle: 'Node.js, REST APIs, Authentication & HTTP',
+    icon: Server,
+    secondaryIcon: Wifi,
+    description: 'Test your expertise in building backend systems with Node.js, Express, REST APIs, JWT authentication, and HTTP protocols.',
+    topics: ['REST APIs', 'Node.js & Express', 'Authentication & JWT', 'HTTP Status Codes'],
     color: 'tertiary'
   }
 ];
