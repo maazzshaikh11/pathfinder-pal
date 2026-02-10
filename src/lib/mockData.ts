@@ -1,6 +1,6 @@
 // Mock data for PlacementPal demo
 
-export type TrackType = 'AI/ML' | 'Cybersecurity' | 'Systems & IoT' | 'Blockchain';
+export type TrackType = 'Programming & DSA' | 'Data Science & ML' | 'Database Management & SQL' | 'Backend / Web Dev';
 
 export interface StudentResult {
   id: string;
@@ -27,9 +27,60 @@ export interface Question {
   difficulty: DifficultyLevel;
 }
 
-export const aiMlQuestions: Question[] = [
+export const programmingDsaQuestions: Question[] = [
   {
-    id: 'aiml-1',
+    id: 'dsa-1',
+    type: 'mcq',
+    question: 'What is the time complexity of binary search on a sorted array?',
+    options: ['O(n)', 'O(log n)', 'O(n log n)', 'O(1)'],
+    correctAnswer: 1,
+    topic: 'Searching Algorithms',
+    explanation: 'Binary search divides the search space in half each step, giving O(log n) time complexity.',
+    difficulty: 'Easy'
+  },
+  {
+    id: 'dsa-2',
+    type: 'mcq',
+    question: 'Which data structure is used for BFS traversal of a graph?',
+    options: ['Stack', 'Queue', 'Priority Queue', 'Linked List'],
+    correctAnswer: 1,
+    topic: 'Graph Algorithms',
+    explanation: 'BFS uses a Queue (FIFO) to explore nodes level by level.',
+    difficulty: 'Easy'
+  },
+  {
+    id: 'dsa-3',
+    type: 'coding',
+    question: 'What is the worst-case time complexity of QuickSort? Express in Big-O notation (e.g., O(n^2)).',
+    correctAnswer: 'O(n^2)',
+    topic: 'Sorting Algorithms',
+    explanation: 'QuickSort degrades to O(n^2) when the pivot selection is poor (e.g., already sorted array with first element as pivot).',
+    difficulty: 'Medium'
+  },
+  {
+    id: 'dsa-4',
+    type: 'mcq',
+    question: 'Which technique is used to solve the 0/1 Knapsack problem optimally?',
+    options: ['Greedy', 'Dynamic Programming', 'Divide and Conquer', 'Backtracking'],
+    correctAnswer: 1,
+    topic: 'Dynamic Programming',
+    explanation: 'The 0/1 Knapsack problem requires Dynamic Programming for an optimal solution as greedy does not guarantee optimality.',
+    difficulty: 'Medium'
+  },
+  {
+    id: 'dsa-5',
+    type: 'coding',
+    question: 'In a min-heap with n elements, what is the time complexity of extracting the minimum element? Express in Big-O notation.',
+    correctAnswer: 'O(log n)',
+    topic: 'Heaps & Priority Queues',
+    explanation: 'Extracting the min removes the root and requires heapify-down, which takes O(log n).',
+    difficulty: 'Hard'
+  }
+];
+
+export const dataScienceMlQuestions: Question[] = [
+  {
+    id: 'dsml-1',
     type: 'mcq',
     question: 'Which metric is most appropriate for evaluating a model on an imbalanced classification dataset?',
     options: ['Accuracy', 'F1-Score', 'Mean Squared Error', 'R-squared'],
@@ -39,7 +90,7 @@ export const aiMlQuestions: Question[] = [
     difficulty: 'Medium'
   },
   {
-    id: 'aiml-2',
+    id: 'dsml-2',
     type: 'mcq',
     question: 'What is the purpose of dropout in neural networks?',
     options: ['Speed up training', 'Reduce overfitting', 'Increase model capacity', 'Normalize inputs'],
@@ -49,7 +100,7 @@ export const aiMlQuestions: Question[] = [
     difficulty: 'Easy'
   },
   {
-    id: 'aiml-3',
+    id: 'dsml-3',
     type: 'coding',
     question: 'Write a Python function that calculates the sigmoid activation function. The function should take a number x and return 1 / (1 + e^(-x)). What would be the output for x = 0?',
     correctAnswer: '0.5',
@@ -58,7 +109,7 @@ export const aiMlQuestions: Question[] = [
     difficulty: 'Medium'
   },
   {
-    id: 'aiml-4',
+    id: 'dsml-4',
     type: 'mcq',
     question: 'What technique is used to prevent gradient vanishing in deep networks?',
     options: ['Max Pooling', 'Batch Normalization', 'Softmax', 'One-Hot Encoding'],
@@ -68,7 +119,7 @@ export const aiMlQuestions: Question[] = [
     difficulty: 'Hard'
   },
   {
-    id: 'aiml-5',
+    id: 'dsml-5',
     type: 'coding',
     question: 'In a confusion matrix, if TP=80, FP=10, TN=85, FN=25, what is the precision value? (Round to 2 decimal places)',
     correctAnswer: '0.89',
@@ -78,155 +129,104 @@ export const aiMlQuestions: Question[] = [
   }
 ];
 
-export const cybersecurityQuestions: Question[] = [
+export const databaseSqlQuestions: Question[] = [
   {
-    id: 'cyber-1',
+    id: 'db-1',
     type: 'mcq',
-    question: 'Which attack exploits the trust a website has in a user\'s browser?',
-    options: ['SQL Injection', 'XSS (Cross-Site Scripting)', 'CSRF (Cross-Site Request Forgery)', 'DDoS'],
+    question: 'Which normal form eliminates transitive dependencies?',
+    options: ['1NF', '2NF', '3NF', 'BCNF'],
     correctAnswer: 2,
-    topic: 'Web Security',
-    explanation: 'CSRF exploits the trust that a site has in the user\'s browser by making unauthorized requests on behalf of an authenticated user.',
+    topic: 'Normalization',
+    explanation: '3NF eliminates transitive dependencies where non-key attributes depend on other non-key attributes.',
     difficulty: 'Medium'
   },
   {
-    id: 'cyber-2',
+    id: 'db-2',
     type: 'mcq',
-    question: 'What does the "S" in HTTPS stand for?',
-    options: ['Simple', 'Secure', 'Standard', 'System'],
+    question: 'Which SQL clause is used to filter groups of rows?',
+    options: ['WHERE', 'HAVING', 'GROUP BY', 'ORDER BY'],
     correctAnswer: 1,
-    topic: 'Network Security',
-    explanation: 'HTTPS stands for HyperText Transfer Protocol Secure, indicating encrypted communication.',
+    topic: 'SQL Queries',
+    explanation: 'HAVING filters groups after GROUP BY, while WHERE filters individual rows before grouping.',
     difficulty: 'Easy'
   },
   {
-    id: 'cyber-3',
+    id: 'db-3',
     type: 'coding',
-    question: 'In a Caesar cipher with a shift of 3, what would be the encrypted form of the letter "A"?',
-    correctAnswer: 'D',
-    topic: 'Cryptography',
-    explanation: 'Caesar cipher shifts each letter by a fixed amount. A shifted by 3 becomes D (A→B→C→D).',
+    question: 'What type of JOIN returns all rows from both tables, matching where possible and filling NULLs otherwise? (One word answer)',
+    correctAnswer: 'FULL',
+    topic: 'SQL Joins',
+    explanation: 'A FULL (OUTER) JOIN returns all rows from both tables, with NULLs where there is no match.',
     difficulty: 'Easy'
   },
   {
-    id: 'cyber-4',
+    id: 'db-4',
     type: 'mcq',
-    question: 'Which hashing algorithm is considered insecure and should NOT be used for password storage?',
-    options: ['bcrypt', 'Argon2', 'MD5', 'scrypt'],
-    correctAnswer: 2,
-    topic: 'Cryptography',
-    explanation: 'MD5 is cryptographically broken and vulnerable to collision attacks, making it unsuitable for security-critical applications.',
+    question: 'Which property of ACID ensures that a transaction is treated as a single unit?',
+    options: ['Atomicity', 'Consistency', 'Isolation', 'Durability'],
+    correctAnswer: 0,
+    topic: 'Transactions & ACID',
+    explanation: 'Atomicity ensures all operations in a transaction succeed or none do — it is all-or-nothing.',
     difficulty: 'Medium'
   },
   {
-    id: 'cyber-5',
+    id: 'db-5',
     type: 'coding',
-    question: 'In SQL injection prevention, what method should be used instead of string concatenation? (One word, lowercase)',
-    correctAnswer: 'parameterization',
-    topic: 'Web Security',
-    explanation: 'Parameterized queries (prepared statements) separate SQL code from data, preventing injection attacks.',
+    question: 'What is the worst-case time complexity of a query on an unindexed column with n rows? Express in Big-O notation.',
+    correctAnswer: 'O(n)',
+    topic: 'Indexing & Optimization',
+    explanation: 'Without an index, the database must perform a full table scan, resulting in O(n) time complexity.',
     difficulty: 'Hard'
   }
 ];
 
-export const iotQuestions: Question[] = [
+export const backendWebDevQuestions: Question[] = [
   {
-    id: 'iot-1',
+    id: 'backend-1',
     type: 'mcq',
-    question: 'Which protocol is commonly used for lightweight messaging in IoT applications?',
-    options: ['HTTP', 'MQTT', 'FTP', 'SMTP'],
+    question: 'Which HTTP method is idempotent and used to update a resource completely?',
+    options: ['POST', 'PUT', 'PATCH', 'DELETE'],
     correctAnswer: 1,
-    topic: 'IoT Protocols',
-    explanation: 'MQTT (Message Queuing Telemetry Transport) is designed for low-bandwidth, high-latency networks, making it ideal for IoT.',
+    topic: 'REST APIs',
+    explanation: 'PUT is idempotent and replaces the entire resource. Calling it multiple times produces the same result.',
     difficulty: 'Easy'
   },
   {
-    id: 'iot-2',
+    id: 'backend-2',
     type: 'mcq',
-    question: 'What is the primary purpose of a Real-Time Operating System (RTOS)?',
-    options: ['Maximum throughput', 'Guaranteed response times', 'Multi-user support', 'High memory capacity'],
+    question: 'What does middleware do in an Express.js application?',
+    options: ['Renders HTML pages', 'Intercepts and processes requests before reaching route handlers', 'Manages the database', 'Compiles JavaScript'],
     correctAnswer: 1,
-    topic: 'Real-time Processing',
-    explanation: 'RTOS prioritizes deterministic timing and guaranteed response times for time-critical applications.',
-    difficulty: 'Medium'
-  },
-  {
-    id: 'iot-3',
-    type: 'coding',
-    question: 'In embedded C, what is the typical size (in bytes) of an unsigned char used to represent sensor readings?',
-    correctAnswer: '1',
-    topic: 'Embedded Systems',
-    explanation: 'An unsigned char is typically 1 byte (8 bits), allowing values from 0 to 255.',
+    topic: 'Node.js & Express',
+    explanation: 'Middleware functions have access to the request and response objects and can execute code, modify them, or end the request-response cycle.',
     difficulty: 'Easy'
   },
   {
-    id: 'iot-4',
-    type: 'mcq',
-    question: 'Which communication standard is specifically designed for low-power wide-area networks (LPWAN)?',
-    options: ['WiFi 6', 'LoRaWAN', 'Bluetooth Classic', 'USB 3.0'],
-    correctAnswer: 1,
-    topic: 'IoT Protocols',
-    explanation: 'LoRaWAN enables long-range communication with minimal power consumption, ideal for remote IoT sensors.',
-    difficulty: 'Hard'
-  },
-  {
-    id: 'iot-5',
+    id: 'backend-3',
     type: 'coding',
-    question: 'In I2C communication, how many wires are needed for data transfer (excluding power)? Enter a number.',
-    correctAnswer: '2',
-    topic: 'Embedded Systems',
-    explanation: 'I2C uses 2 wires: SDA (data line) and SCL (clock line) for bidirectional communication.',
-    difficulty: 'Medium'
-  }
-];
-
-export const blockchainQuestions: Question[] = [
-  {
-    id: 'blockchain-1',
-    type: 'mcq',
-    question: 'Which consensus mechanism does Ethereum 2.0 primarily use?',
-    options: ['Proof of Work', 'Proof of Stake', 'Delegated Proof of Stake', 'Proof of Authority'],
-    correctAnswer: 1,
-    topic: 'Consensus Mechanisms',
-    explanation: 'Ethereum 2.0 transitioned to Proof of Stake for improved energy efficiency and scalability.',
-    difficulty: 'Easy'
-  },
-  {
-    id: 'blockchain-2',
-    type: 'mcq',
-    question: 'What is a smart contract?',
-    options: ['A legal document on blockchain', 'Self-executing code on blockchain', 'A type of cryptocurrency', 'A wallet address'],
-    correctAnswer: 1,
-    topic: 'Smart Contracts',
-    explanation: 'Smart contracts are self-executing programs stored on a blockchain that automatically enforce and execute agreement terms.',
-    difficulty: 'Easy'
-  },
-  {
-    id: 'blockchain-3',
-    type: 'coding',
-    question: 'In Solidity, what keyword is used to make a function callable only by the contract owner? (Hint: it\'s a common modifier name)',
-    correctAnswer: 'onlyOwner',
-    topic: 'Smart Contracts',
-    explanation: 'onlyOwner is a common modifier pattern in Solidity that restricts function access to the contract owner.',
+    question: 'In JWT authentication, what are the three parts of a token separated by? (One character answer)',
+    correctAnswer: '.',
+    topic: 'Authentication & JWT',
+    explanation: 'A JWT consists of three parts: Header, Payload, and Signature, separated by dots (.).',
     difficulty: 'Medium'
   },
   {
-    id: 'blockchain-4',
+    id: 'backend-4',
     type: 'mcq',
-    question: 'What is the maximum supply of Bitcoin?',
-    options: ['10 million', '21 million', '100 million', 'Unlimited'],
+    question: 'Which status code indicates that the server understood the request but refuses to authorize it?',
+    options: ['401 Unauthorized', '403 Forbidden', '404 Not Found', '500 Internal Server Error'],
     correctAnswer: 1,
-    topic: 'Tokenomics',
-    explanation: 'Bitcoin has a hard cap of 21 million coins, making it a deflationary asset by design.',
+    topic: 'HTTP Status Codes',
+    explanation: '403 Forbidden means the server understood the request but the client does not have permission to access the resource.',
     difficulty: 'Medium'
   },
   {
-    id: 'blockchain-5',
+    id: 'backend-5',
     type: 'coding',
-    question: 'What is the name of the standard for fungible tokens on Ethereum? (Format: ERC-XX)',
-    correctAnswer: 'ERC-20',
-    topic: 'Token Standards',
-    explanation: 'ERC-20 is the technical standard for fungible tokens on Ethereum, defining how tokens are transferred and tracked.',
+    question: 'In Node.js, what built-in module is used to create an HTTP server? (One word, lowercase)',
+    correctAnswer: 'http',
+    topic: 'Node.js & Express',
+    explanation: 'The built-in "http" module in Node.js provides functionality to create HTTP servers and make HTTP requests.',
     difficulty: 'Hard'
   }
 ];
@@ -239,13 +239,13 @@ const studentNames = [
 ];
 
 const gapsByTrack: Record<TrackType, string[]> = {
-  'AI/ML': ['Model Evaluation', 'Neural Networks', 'Activation Functions', 'Feature Engineering', 'Regularization'],
-  'Cybersecurity': ['Web Security', 'Network Security', 'Cryptography', 'Authentication', 'Threat Modeling'],
-  'Systems & IoT': ['IoT Protocols', 'Real-time Processing', 'Embedded Systems', 'Sensor Networks', 'Edge Computing'],
-  'Blockchain': ['Smart Contracts', 'Consensus Mechanisms', 'DeFi', 'Cryptographic Hashing', 'Token Standards']
+  'Programming & DSA': ['Searching Algorithms', 'Graph Algorithms', 'Sorting Algorithms', 'Dynamic Programming', 'Heaps & Priority Queues'],
+  'Data Science & ML': ['Model Evaluation', 'Neural Networks', 'Activation Functions', 'Deep Learning', 'Feature Engineering'],
+  'Database Management & SQL': ['Normalization', 'SQL Queries', 'SQL Joins', 'Transactions & ACID', 'Indexing & Optimization'],
+  'Backend / Web Dev': ['REST APIs', 'Node.js & Express', 'Authentication & JWT', 'HTTP Status Codes', 'API Design']
 };
 
-const tracks: TrackType[] = ['AI/ML', 'Cybersecurity', 'Systems & IoT', 'Blockchain'];
+const tracks: TrackType[] = ['Programming & DSA', 'Data Science & ML', 'Database Management & SQL', 'Backend / Web Dev'];
 
 function generateMockStudents(): StudentResult[] {
   const students: StudentResult[] = [];
@@ -256,7 +256,6 @@ function generateMockStudents(): StudentResult[] {
     const gaps: string[] = [];
     const trackGaps = gapsByTrack[track];
     
-    // Assign gaps based on performance
     if (correct < 5) {
       const numGaps = 5 - correct;
       for (let i = 0; i < numGaps && i < trackGaps.length; i++) {
@@ -276,7 +275,7 @@ function generateMockStudents(): StudentResult[] {
       track,
       correct,
       total: 5,
-      gaps: [...new Set(gaps)], // Remove duplicates
+      gaps: [...new Set(gaps)],
       level,
       completedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
     });
@@ -321,8 +320,10 @@ export const getTrackStats = (track: TrackType) => {
 };
 
 export const getAllStats = () => {
-  const aimlStats = getTrackStats('AI/ML');
-  const cyberStats = getTrackStats('Cybersecurity');
+  const progStats = getTrackStats('Programming & DSA');
+  const dsmlStats = getTrackStats('Data Science & ML');
+  const dbStats = getTrackStats('Database Management & SQL');
+  const backendStats = getTrackStats('Backend / Web Dev');
   
   const allGaps = mockStudents.flatMap(s => s.gaps);
   const gapCounts: Record<string, number> = {};
@@ -332,13 +333,15 @@ export const getAllStats = () => {
   
   const topGaps = Object.entries(gapCounts)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, 5)
     .map(([gap, count]) => ({ gap, count, percentage: Math.round((count / mockStudents.length) * 100) }));
   
   return {
     totalStudents: mockStudents.length,
-    aiml: aimlStats,
-    cybersecurity: cyberStats,
+    programming: progStats,
+    datascience: dsmlStats,
+    database: dbStats,
+    backend: backendStats,
     topGaps
   };
 };

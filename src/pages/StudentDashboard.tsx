@@ -6,7 +6,8 @@ import { motion } from 'framer-motion';
 import { 
   Brain, Shield, Trophy, Target, AlertCircle, 
   ArrowRight, BookOpen, Video, FileText, RefreshCw,
-  CheckCircle, XCircle, TrendingUp, Sparkles, Clock, Cpu, Link2
+  CheckCircle, XCircle, TrendingUp, Sparkles, Clock, Cpu, Link2,
+  Code, Database, Server
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
@@ -39,16 +40,16 @@ const StudentDashboard = () => {
   
   const getTrackIcon = () => {
     switch (track) {
-      case 'AI/ML': return Brain;
-      case 'Cybersecurity': return Shield;
-      case 'Systems & IoT': return Cpu;
-      case 'Blockchain': return Link2;
-      default: return Brain;
+      case 'Programming & DSA': return Code;
+      case 'Data Science & ML': return Brain;
+      case 'Database Management & SQL': return Database;
+      case 'Backend / Web Dev': return Server;
+      default: return Code;
     }
   };
   
   const TrackIcon = getTrackIcon();
-  const isAiMl = track === 'AI/ML';
+  const isPrimary = track === 'Programming & DSA';
 
   const nextSteps = {
     'Beginner': [
@@ -97,7 +98,7 @@ const StudentDashboard = () => {
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className={`absolute top-40 left-20 w-72 h-72 rounded-full ${isAiMl ? 'bg-primary/5' : 'bg-accent/5'} blur-3xl`}
+          className={`absolute top-40 left-20 w-72 h-72 rounded-full ${isPrimary ? 'bg-primary/5' : 'bg-accent/5'} blur-3xl`}
           animate={{ scale: [1, 1.3, 1] }}
           transition={{ duration: 6, repeat: Infinity }}
         />
@@ -143,8 +144,8 @@ const StudentDashboard = () => {
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           {/* Track */}
           <CyberCard delay={0.1} className="text-center">
-            <div className={`w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center ${isAiMl ? 'bg-primary/20 border-primary/50' : 'bg-accent/20 border-accent/50'} border`}>
-              <TrackIcon className={`w-6 h-6 ${isAiMl ? 'text-primary' : 'text-accent'}`} />
+            <div className={`w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center ${isPrimary ? 'bg-primary/20 border-primary/50' : 'bg-accent/20 border-accent/50'} border`}>
+              <TrackIcon className={`w-6 h-6 ${isPrimary ? 'text-primary' : 'text-accent'}`} />
             </div>
             <p className="font-display font-bold text-xl">{track}</p>
             <p className="text-sm text-muted-foreground">Selected Track</p>
@@ -218,9 +219,9 @@ const StudentDashboard = () => {
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Skill Gaps */}
-          <CyberCard variant={isAiMl ? 'glow' : 'accent'} delay={0.3}>
+          <CyberCard variant={isPrimary ? 'glow' : 'accent'} delay={0.3}>
             <div className="flex items-center gap-3 mb-6">
-              <AlertCircle className={`w-5 h-5 ${isAiMl ? 'text-primary' : 'text-accent'}`} />
+              <AlertCircle className={`w-5 h-5 ${isPrimary ? 'text-primary' : 'text-accent'}`} />
               <h2 className="font-display text-xl font-bold">Identified Skill Gaps</h2>
             </div>
 

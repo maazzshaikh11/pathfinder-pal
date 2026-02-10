@@ -164,7 +164,7 @@ const Login = () => {
           className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl"
         >
           {[
-            { icon: Brain, label: 'AI/ML & Cybersecurity Tracks' },
+            { icon: Brain, label: 'Programming, DSA & ML Tracks' },
             { icon: Zap, label: 'Real-time Gap Detection' },
             { icon: Shield, label: 'TPO Analytics Dashboard' },
           ].map((feature, index) => (
