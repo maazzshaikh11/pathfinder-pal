@@ -5,6 +5,69 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function fetchLinkedInViaGemini(linkedinUrl: string): Promise<string> {
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key is not configured');
+  }
+
+  console.log('Fetching LinkedIn profile via Gemini with Google Search grounding...');
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `Go to this LinkedIn profile URL and extract ALL the information you can find: ${linkedinUrl}
+
+Please extract and return the following details in a structured format:
+- Full Name
+- Headline/Title
+- Location
+- About/Summary section (full text)
+- Current and past Experience (company names, roles, durations, descriptions)
+- Education (institutions, degrees, years)
+- Skills (all listed skills)
+- Certifications
+- Projects
+- Any other relevant information visible on the profile
+
+Return ALL the raw text content you find. Be thorough and include everything.`
+          }]
+        }],
+        tools: [{
+          google_search: {}
+        }]
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error('Gemini API error:', response.status, errText);
+    throw new Error(`Gemini API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const textParts = data.candidates?.[0]?.content?.parts || [];
+  let profileContent = '';
+  for (const part of textParts) {
+    if (part.text) {
+      profileContent += part.text + '\n';
+    }
+  }
+
+  if (!profileContent || profileContent.trim().length < 20) {
+    throw new Error('Could not fetch LinkedIn profile content. The profile may be private or restricted.');
+  }
+
+  console.log('Successfully fetched LinkedIn profile content, length:', profileContent.length);
+  return profileContent;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,11 +76,32 @@ serve(async (req) => {
   try {
     const { linkedinUrl, profileText, track } = await req.json();
 
-    if (!profileText || profileText.trim().length < 30) {
+    let contentToAnalyze = '';
+
+    // If profileText is provided and substantial, use it directly
+    if (profileText && profileText.trim().length >= 30) {
+      contentToAnalyze = profileText.trim();
+      console.log('Using provided profile text for analysis');
+    } 
+    // Otherwise, try to fetch via Gemini + Google Search grounding
+    else if (linkedinUrl && linkedinUrl.includes('linkedin.com')) {
+      try {
+        contentToAnalyze = await fetchLinkedInViaGemini(linkedinUrl);
+      } catch (fetchErr) {
+        console.error('Failed to fetch LinkedIn profile:', fetchErr);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Could not fetch LinkedIn profile automatically: ${fetchErr instanceof Error ? fetchErr.message : 'Unknown error'}. Please try pasting your profile content manually.`
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Please paste your LinkedIn profile content (About, Experience, Skills, Education sections). LinkedIn blocks automated scraping, so we need you to copy-paste the text from your profile page.' 
+          error: 'Please provide a LinkedIn URL or paste your profile content.' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -30,8 +114,6 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const contentToAnalyze = profileText;
 
     console.log('Analyzing LinkedIn profile with AI...');
 
