@@ -383,7 +383,7 @@ const StudentDashboard = () => {
                   </p>
                 </div>
               </div>
-              <CyberButton variant={level === 'Ready' ? 'success' : 'primary'}>
+              <CyberButton variant={level === 'Ready' ? 'success' : 'primary'} onClick={() => navigate('/learning-path')}>
                 View Learning Path
                 <ArrowRight className="w-4 h-4 ml-2" />
               </CyberButton>
