@@ -61,6 +61,7 @@ const ResumeAnalysisPage = () => {
 
   // LinkedIn state
   const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [linkedinProfileText, setLinkedinProfileText] = useState('');
   const [linkedinAnalysis, setLinkedinAnalysis] = useState<LinkedInAnalysis | null>(null);
   const [isAnalyzingLinkedin, setIsAnalyzingLinkedin] = useState(false);
 
@@ -103,13 +104,10 @@ const ResumeAnalysisPage = () => {
   };
 
   const handleAnalyzeLinkedin = async () => {
-    if (!linkedinUrl.trim()) return;
-    
-    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i;
-    if (!linkedinRegex.test(linkedinUrl.trim())) {
+    if (!linkedinProfileText.trim() && !linkedinUrl.trim()) {
       toast({
-        title: "Invalid URL",
-        description: "Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/username)",
+        title: "Input Required",
+        description: "Please paste your LinkedIn profile content or enter a LinkedIn URL.",
         variant: "destructive",
       });
       return;
@@ -120,7 +118,11 @@ const ResumeAnalysisPage = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('linkedin-analyze', {
-        body: { linkedinUrl: linkedinUrl.trim(), track: selectedTrackForResume },
+        body: { 
+          linkedinUrl: linkedinUrl.trim() || undefined, 
+          profileText: linkedinProfileText.trim() || undefined,
+          track: selectedTrackForResume 
+        },
       });
 
       if (error) throw error;
@@ -149,6 +151,7 @@ const ResumeAnalysisPage = () => {
 
   const handleResetLinkedin = () => {
     setLinkedinUrl('');
+    setLinkedinProfileText('');
     setLinkedinAnalysis(null);
   };
 
@@ -317,7 +320,7 @@ const ResumeAnalysisPage = () => {
                         </div>
                         <div>
                           <h3 className="font-display text-lg font-bold">LinkedIn Profile Analysis</h3>
-                          <p className="text-xs text-muted-foreground">Paste your profile URL for AI-powered analysis</p>
+                          <p className="text-xs text-muted-foreground">Paste your profile content for AI-powered analysis</p>
                         </div>
                       </div>
 
@@ -327,15 +330,21 @@ const ResumeAnalysisPage = () => {
                           <Input
                             value={linkedinUrl}
                             onChange={(e) => setLinkedinUrl(e.target.value)}
-                            placeholder="https://linkedin.com/in/your-profile"
+                            placeholder="https://linkedin.com/in/your-profile (optional)"
                             className="pl-10 bg-muted border-border"
-                            onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeLinkedin()}
                           />
                         </div>
 
+                        <textarea
+                          value={linkedinProfileText}
+                          onChange={(e) => setLinkedinProfileText(e.target.value)}
+                          placeholder="Paste your LinkedIn profile content here (copy from your LinkedIn page: About, Experience, Skills, Education sections)..."
+                          className="w-full min-h-[120px] p-3 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-y focus:outline-none focus:border-primary/50 transition-colors"
+                        />
+
                         <div className="p-3 rounded-lg bg-muted/50 border border-border">
                           <p className="text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">How it works:</span> We scrape your public LinkedIn profile, then use AI to analyze your skills, experience, and profile completeness against industry standards.
+                            <span className="font-medium text-foreground">How it works:</span> Copy your LinkedIn profile sections (About, Experience, Skills, Education) and paste them above. Our AI will analyze your skills, experience, and profile strength against industry standards.
                           </p>
                         </div>
 
@@ -343,11 +352,11 @@ const ResumeAnalysisPage = () => {
                           variant="primary"
                           className="w-full"
                           onClick={handleAnalyzeLinkedin}
-                          disabled={isAnalyzingLinkedin || !linkedinUrl.trim()}
+                          disabled={isAnalyzingLinkedin || (!linkedinProfileText.trim() && !linkedinUrl.trim())}
                           glowing
                         >
                           {isAnalyzingLinkedin ? (
-                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scraping & Analyzing...</>
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analyzing Profile...</>
                           ) : (
                             <><Linkedin className="w-4 h-4 mr-2" />Analyze LinkedIn Profile</>
                           )}

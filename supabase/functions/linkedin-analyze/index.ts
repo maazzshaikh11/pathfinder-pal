@@ -11,29 +11,12 @@ serve(async (req) => {
   }
 
   try {
-    const { linkedinUrl, track } = await req.json();
+    const { linkedinUrl, profileText, track } = await req.json();
 
-    if (!linkedinUrl) {
+    if (!profileText && !linkedinUrl) {
       return new Response(
-        JSON.stringify({ success: false, error: 'LinkedIn URL is required' }),
+        JSON.stringify({ success: false, error: 'Profile text or LinkedIn URL is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate LinkedIn URL
-    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i;
-    if (!linkedinRegex.test(linkedinUrl.trim())) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Please provide a valid LinkedIn profile URL (e.g., https://linkedin.com/in/username)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!FIRECRAWL_API_KEY) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Firecrawl is not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -45,45 +28,10 @@ serve(async (req) => {
       );
     }
 
-    console.log('Scraping LinkedIn profile:', linkedinUrl);
+    const contentToAnalyze = profileText || `LinkedIn profile URL: ${linkedinUrl}`;
 
-    // Step 1: Scrape LinkedIn profile using Firecrawl
-    const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: linkedinUrl.trim(),
-        formats: ['markdown'],
-        onlyMainContent: true,
-        waitFor: 3000,
-      }),
-    });
+    console.log('Analyzing LinkedIn profile with AI...');
 
-    const scrapeData = await scrapeResponse.json();
-
-    if (!scrapeResponse.ok || !scrapeData.success) {
-      console.error('Firecrawl error:', scrapeData);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Could not scrape LinkedIn profile. The profile may be private or unavailable.' }),
-        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const profileContent = scrapeData.data?.markdown || scrapeData.markdown || '';
-
-    if (!profileContent || profileContent.length < 50) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Could not extract meaningful content from the LinkedIn profile. It may be private.' }),
-        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Profile scraped, analyzing with AI...');
-
-    // Step 2: Analyze with Gemini AI
     const trackContext = track ? `The student is targeting the "${track}" career track.` : '';
     
     const systemPrompt = `You are an expert career analyst for placement preparation. Analyze the following LinkedIn profile content and provide a detailed assessment. ${trackContext}
@@ -91,7 +39,7 @@ serve(async (req) => {
 Return your analysis in the following JSON format (and ONLY the JSON, no extra text):
 {
   "overallScore": <number 0-100>,
-  "headline": "<person's headline or title>",
+  "headline": "<person's headline or title if found>",
   "name": "<person's name if found>",
   "skillMatchScore": <number 0-100>,
   "projectQualityScore": <number 0-100>,
@@ -111,9 +59,11 @@ Score criteria:
 - skillMatchScore: relevance of skills to the target track or general industry demand
 - projectQualityScore: quality and relevance of projects/portfolio mentioned
 - experienceScore: depth and relevance of work experience
-- profileCompletenessScore: how complete the profile is (photo, about, experience, education, skills sections)
+- profileCompletenessScore: how complete the profile appears (about, experience, education, skills sections)
 - networkStrengthScore: connections, recommendations, endorsements indicators
-- contentQualityScore: quality of descriptions, headlines, about section`;
+- contentQualityScore: quality of descriptions, headlines, about section
+
+Be thorough and fair in your assessment. If limited information is provided, note that in the summary and adjust scores accordingly.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -122,10 +72,10 @@ Score criteria:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analyze this LinkedIn profile:\n\n${profileContent.substring(0, 8000)}` },
+          { role: 'user', content: `Analyze this LinkedIn profile:\n\n${contentToAnalyze.substring(0, 10000)}` },
         ],
       }),
     });
@@ -154,7 +104,6 @@ Score criteria:
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || '';
 
-    // Parse JSON from AI response
     let analysis;
     try {
       const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
@@ -174,7 +123,7 @@ Score criteria:
     console.log('Analysis complete for:', analysis.name || 'Unknown');
 
     return new Response(
-      JSON.stringify({ success: true, analysis, profileContent: profileContent.substring(0, 2000) }),
+      JSON.stringify({ success: true, analysis }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
