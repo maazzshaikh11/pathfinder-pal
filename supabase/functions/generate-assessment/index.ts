@@ -30,44 +30,48 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert assessment question generator for placement preparation. Generate exactly ${numQuestions} unique questions for the "${track}" track.
 
-IMPORTANT RULES:
-- Generate a MIX of MCQ and short-answer (coding) questions
-- Include a variety of difficulty levels: Easy, Medium, Hard
-- Each question must test a DIFFERENT topic within the track
-- MCQ questions must have exactly 4 options
-- For MCQ, correctAnswer is the 0-based index of the correct option
-- For coding/short-answer questions, correctAnswer is the exact text answer (keep it short: a number, a term, Big-O notation, etc.)
-- Questions should be challenging, relevant, and varied — never repeat the same question pattern
-- Each question needs a clear explanation of the correct answer
+CRITICAL RULES FOR CORRECTNESS:
+- Double-check every answer before including it. The correctAnswer MUST be genuinely correct.
+- For MCQ: correctAnswer is the 0-based INDEX of the correct option. Verify the option at that index IS the right answer.
+- For short-answer: correctAnswer is the EXACT text the student must type. Keep it simple (a number, a term, Big-O notation like "O(n)", etc.)
+- Include a clear explanation proving WHY the answer is correct.
+- DO NOT include trick questions or ambiguous questions where multiple answers could be valid.
 
-Return ONLY a JSON array with this exact structure (no extra text):
+QUESTION GUIDELINES:
+- Generate a MIX of MCQ and short-answer (coding) questions
+- Include variety: Easy, Medium, Hard difficulty
+- Each question must test a DIFFERENT topic
+- MCQ questions must have exactly 4 options with only ONE clearly correct answer
+- Avoid questions where the answer depends on context or interpretation
+
+Return ONLY a JSON array (no markdown, no extra text):
 [
   {
     "id": "q-1",
     "type": "mcq",
-    "question": "Question text here?",
+    "question": "Question text?",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "correctAnswer": 1,
     "topic": "Topic Name",
-    "explanation": "Brief explanation of why this is correct.",
+    "explanation": "Explanation proving why option at index 1 is correct.",
     "difficulty": "Easy"
   },
   {
     "id": "q-2",
     "type": "coding",
-    "question": "Question text here?",
+    "question": "Question text?",
     "correctAnswer": "answer",
     "topic": "Different Topic",
-    "explanation": "Brief explanation.",
+    "explanation": "Explanation proving the answer.",
     "difficulty": "Medium"
   }
 ]
 
-Track-specific guidelines:
-- "Programming & DSA": Arrays, Linked Lists, Trees, Graphs, Sorting, Searching, DP, Recursion, Stacks, Queues, Heaps, Hashing, String algorithms, Complexity analysis
-- "Data Science & ML": Statistics, Probability, Regression, Classification, Clustering, Neural Networks, NLP, Feature Engineering, Model Evaluation, Dimensionality Reduction, Ensemble Methods
-- "Database Management & SQL": SQL queries, Joins, Normalization, Indexing, Transactions, ACID, NoSQL, Query optimization, ER diagrams, Stored procedures, Triggers
-- "Backend / Web Dev": REST APIs, HTTP methods/status codes, Authentication (JWT, OAuth), Node.js, Express, Middleware, Databases, Caching, WebSockets, Microservices, Docker`;
+Track topics:
+- "Programming & DSA": Arrays, Linked Lists, Trees, Graphs, Sorting, Searching, DP, Recursion, Stacks, Queues, Heaps, Hashing, Strings, Complexity
+- "Data Science & ML": Statistics, Probability, Regression, Classification, Clustering, Neural Networks, NLP, Feature Engineering, Evaluation Metrics, Dimensionality Reduction, Ensemble Methods
+- "Database Management & SQL": SQL queries, Joins, Normalization, Indexing, Transactions, ACID, NoSQL, Query optimization, ER diagrams, Stored procedures
+- "Backend / Web Dev": REST APIs, HTTP methods/status codes, Authentication (JWT, OAuth), Node.js, Express, Middleware, Databases, Caching, WebSockets, Microservices`;
 
     console.log(`Generating ${numQuestions} questions for track: ${track}`);
 
@@ -81,7 +85,7 @@ Track-specific guidelines:
         model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate ${numQuestions} fresh, unique assessment questions for the "${track}" track. Make them different from typical textbook questions. Use a random seed: ${Date.now()}-${Math.random().toString(36).substring(7)}` },
+          { role: 'user', content: `Generate ${numQuestions} fresh, unique assessment questions for the "${track}" track. VERIFY each answer is correct before including it. Random seed: ${Date.now()}-${Math.random().toString(36).substring(7)}` },
         ],
       }),
     });
@@ -119,12 +123,10 @@ Track-specific guidelines:
         throw new Error('No JSON array found in AI response');
       }
 
-      // Validate structure
       if (!Array.isArray(questions) || questions.length === 0) {
         throw new Error('Invalid questions array');
       }
 
-      // Ensure each question has required fields
       questions = questions.map((q: any, i: number) => ({
         id: q.id || `q-${i + 1}`,
         type: q.type === 'coding' ? 'coding' : 'mcq',
