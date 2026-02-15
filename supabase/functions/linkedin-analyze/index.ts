@@ -28,7 +28,47 @@ serve(async (req) => {
       );
     }
 
-    const contentToAnalyze = profileText || `LinkedIn profile URL: ${linkedinUrl}`;
+    let contentToAnalyze = profileText || '';
+
+    // If no profile text provided but URL exists, try scraping with Firecrawl
+    if (!contentToAnalyze && linkedinUrl) {
+      const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
+      if (FIRECRAWL_API_KEY) {
+        try {
+          console.log('Scraping LinkedIn URL with Firecrawl:', linkedinUrl);
+          const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: linkedinUrl,
+              formats: ['markdown'],
+              onlyMainContent: true,
+              waitFor: 3000,
+            }),
+          });
+
+          const scrapeData = await scrapeResponse.json();
+          const markdown = scrapeData?.data?.markdown || scrapeData?.markdown || '';
+          
+          if (markdown && markdown.length > 50) {
+            console.log('Successfully scraped LinkedIn profile, content length:', markdown.length);
+            contentToAnalyze = markdown;
+          } else {
+            console.log('Firecrawl returned limited content, using URL as fallback');
+            contentToAnalyze = `LinkedIn profile URL: ${linkedinUrl}. Note: Could not scrape full profile content. Please analyze based on the URL and provide general guidance.`;
+          }
+        } catch (scrapeErr) {
+          console.error('Firecrawl scrape error:', scrapeErr);
+          contentToAnalyze = `LinkedIn profile URL: ${linkedinUrl}. Note: Scraping failed. Please analyze based on the URL and provide general guidance.`;
+        }
+      } else {
+        console.log('No FIRECRAWL_API_KEY, using URL as content');
+        contentToAnalyze = `LinkedIn profile URL: ${linkedinUrl}. Note: No scraping service available. Please provide general profile analysis guidance.`;
+      }
+    }
 
     console.log('Analyzing LinkedIn profile with AI...');
 
