@@ -15,8 +15,8 @@ const Navbar = () => {
   };
 
   const navItems = isLoggedIn && role === 'student' ? [
-    { path: '/tracks', label: 'Tracks', icon: Home },
-    { path: '/assessment', label: 'Assessment', icon: ClipboardCheck },
+    { path: '/student-home', label: 'Home', icon: Home },
+    { path: '/tracks', label: 'Assessment', icon: ClipboardCheck },
     { path: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ] : isLoggedIn && role === 'tpo' ? [
     { path: '/tpo-dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,7 +32,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to={isLoggedIn ? (role === 'tpo' ? '/tpo-dashboard' : '/tracks') : '/'} className="flex items-center gap-2 group">
+          <Link to={isLoggedIn ? (role === 'tpo' ? '/tpo-dashboard' : '/student-home') : '/'} className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/50 flex items-center justify-center glow-primary">
               <Brain className="w-5 h-5 text-primary" />
             </div>
