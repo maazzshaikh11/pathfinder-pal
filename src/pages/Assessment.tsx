@@ -119,25 +119,22 @@ const Assessment = () => {
 
   const handleAnswer = () => {
     if (!question) return;
-    const answer = question.type === 'mcq' ? selectedOption : codingAnswer.trim().toUpperCase();
-    const correctAnswer = typeof question.correctAnswer === 'number' 
-      ? question.correctAnswer 
-      : String(question.correctAnswer).toUpperCase();
+    const answer = question.type === 'mcq' ? selectedOption : codingAnswer.trim();
     
-    const isCorrect = answer === correctAnswer;
-    
+    // Store user's raw answer — verification happens server-side after all questions
     const newAnswer: Answer = {
       questionId: question.id,
       answer: answer as string | number,
-      isCorrect,
+      isCorrect: false, // Will be updated after AI verification
       topic: question.topic,
       difficulty: question.difficulty
     };
     
-    setAnswers([...answers, newAnswer]);
+    const updatedAnswers = [...answers, newAnswer];
+    setAnswers(updatedAnswers);
     
     if (isLastQuestion) {
-      handleSubmit([...answers, newAnswer]);
+      handleSubmit(updatedAnswers);
     } else {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedOption(null);
@@ -148,29 +145,75 @@ const Assessment = () => {
   const handleSubmit = async (finalAnswers: Answer[]) => {
     setIsSubmitting(true);
     setIsAnalyzing(true);
-    
-    const correctCount = finalAnswers.filter(a => a.isCorrect).length;
-    const gaps: string[] = [];
-    
-    finalAnswers.forEach((answer) => {
-      if (!answer.isCorrect) {
-        gaps.push(answer.topic);
-      }
-    });
-
-    const questionResponses = finalAnswers.map(a => ({
-      questionId: a.questionId,
-      topic: a.topic,
-      isCorrect: a.isCorrect,
-      difficulty: a.difficulty
-    }));
-
-    let level: 'Beginner' | 'Intermediate' | 'Ready';
-    if (correctCount <= 1) level = 'Beginner';
-    else if (correctCount <= 3) level = 'Intermediate';
-    else level = 'Ready';
 
     try {
+      // Step 1: AI-verify all answers
+      const userAnswerValues = finalAnswers.map(a => a.answer);
+      
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-assessment', {
+        body: {
+          questions,
+          userAnswers: userAnswerValues,
+          track,
+        },
+      });
+
+      if (verifyError) throw verifyError;
+
+      let correctCount: number;
+      let gaps: string[];
+      let verifiedAnswers = finalAnswers;
+
+      if (verifyData?.success && verifyData?.results) {
+        // Use AI-verified results
+        const verifiedResults = verifyData.results;
+        correctCount = verifyData.correctCount;
+        gaps = verifyData.gaps;
+
+        // Update answers with AI verification
+        verifiedAnswers = finalAnswers.map((a, i) => ({
+          ...a,
+          isCorrect: verifiedResults[i]?.isCorrect ?? false,
+          topic: verifiedResults[i]?.topic ?? a.topic,
+        }));
+        setAnswers(verifiedAnswers);
+
+        // Update question explanations with AI-verified ones
+        const updatedQuestions = questions.map((q, i) => ({
+          ...q,
+          explanation: verifiedResults[i]?.explanation ?? q.explanation,
+          correctAnswer: verifiedResults[i]?.correctAnswer ?? q.correctAnswer,
+        }));
+        setQuestions(updatedQuestions);
+
+        console.log(`AI Verified: ${correctCount}/${questions.length} correct`);
+      } else {
+        // Fallback to local comparison if verification fails
+        console.warn('AI verification failed, using local comparison');
+        verifiedAnswers = finalAnswers.map(a => {
+          const q = questions.find(q => q.id === a.questionId);
+          if (!q) return a;
+          const correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : String(q.correctAnswer).toUpperCase();
+          const userAnswer = typeof a.answer === 'number' ? a.answer : String(a.answer).toUpperCase();
+          return { ...a, isCorrect: userAnswer === correctAnswer };
+        });
+        setAnswers(verifiedAnswers);
+        correctCount = verifiedAnswers.filter(a => a.isCorrect).length;
+        gaps = verifiedAnswers.filter(a => !a.isCorrect).map(a => a.topic);
+      }
+
+      const questionResponses = verifiedAnswers.map(a => ({
+        questionId: a.questionId,
+        topic: a.topic,
+        isCorrect: a.isCorrect,
+        difficulty: a.difficulty
+      }));
+
+      let level: 'Beginner' | 'Intermediate' | 'Ready';
+      if (correctCount <= 1) level = 'Beginner';
+      else if (correctCount <= 3) level = 'Intermediate';
+      else level = 'Ready';
+
       const { data: existingStudent } = await supabase
         .from('students')
         .select('id')
