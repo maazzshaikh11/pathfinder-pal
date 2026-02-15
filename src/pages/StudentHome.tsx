@@ -310,6 +310,23 @@ const StudentHome = () => {
           </CyberCard>
         </motion.section>
 
+        {/* === DISCLAIMER / ABOUT === */}
+        <motion.footer
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mt-8 mb-4"
+        >
+          <div className="max-w-4xl mx-auto text-center p-6 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-display font-semibold text-primary">PlacementPal</span> is an AI-powered placement preparation platform designed to help students identify skill gaps, analyze resumes, and receive personalized learning recommendations. Built with React, Tailwind CSS, and powered by Gemini AI & Supabase, this project aims to bridge the gap between academic learning and industry-ready skills. Course recommendations are curated from verified platforms like Coursera, Udemy & NPTEL. Assessment scores and AI predictions are indicative and meant for self-improvement purposes only.
+            </p>
+            <p className="text-[10px] text-muted-foreground/60 mt-3 font-mono">
+              © {new Date().getFullYear()} PlacementPal • Built for educational purposes
+            </p>
+          </div>
+        </motion.footer>
+
       </div>
 
       <FloatingTPOChat />
