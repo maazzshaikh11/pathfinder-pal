@@ -104,10 +104,10 @@ const ResumeAnalysisPage = () => {
   };
 
   const handleAnalyzeLinkedin = async () => {
-    if (!linkedinProfileText.trim() && !linkedinUrl.trim()) {
+    if (!linkedinProfileText.trim()) {
       toast({
-        title: "Input Required",
-        description: "Please paste your LinkedIn profile content or enter a LinkedIn URL.",
+        title: "Profile Content Required",
+        description: "Please paste your LinkedIn profile content. LinkedIn blocks automated scraping, so copy-paste your About, Experience, Skills & Education sections.",
         variant: "destructive",
       });
       return;
@@ -338,13 +338,13 @@ const ResumeAnalysisPage = () => {
                         <textarea
                           value={linkedinProfileText}
                           onChange={(e) => setLinkedinProfileText(e.target.value)}
-                          placeholder="Paste your LinkedIn profile content here (copy from your LinkedIn page: About, Experience, Skills, Education sections)..."
+                          placeholder="⚠️ REQUIRED: Open your LinkedIn profile → Select all text (Ctrl+A) → Copy (Ctrl+C) → Paste here. Include About, Experience, Skills, Education sections..."
                           className="w-full min-h-[120px] p-3 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-y focus:outline-none focus:border-primary/50 transition-colors"
                         />
 
-                        <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
                           <p className="text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">How it works:</span> Copy your LinkedIn profile sections (About, Experience, Skills, Education) and paste them above. Our AI will analyze your skills, experience, and profile strength against industry standards.
+                            <span className="font-medium text-destructive">Important:</span> LinkedIn blocks automated scraping, so you must paste your profile content manually. Open your LinkedIn profile, select all the text on the page (Ctrl+A), copy it (Ctrl+C), and paste it above. The URL field is optional — for your reference only.
                           </p>
                         </div>
 
@@ -352,7 +352,7 @@ const ResumeAnalysisPage = () => {
                           variant="primary"
                           className="w-full"
                           onClick={handleAnalyzeLinkedin}
-                          disabled={isAnalyzingLinkedin || (!linkedinProfileText.trim() && !linkedinUrl.trim())}
+                          disabled={isAnalyzingLinkedin || !linkedinProfileText.trim()}
                           glowing
                         >
                           {isAnalyzingLinkedin ? (
