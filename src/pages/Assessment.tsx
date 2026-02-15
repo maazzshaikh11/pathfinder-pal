@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, CheckCircle, XCircle, Brain, Shield, 
   Terminal, Code, AlertTriangle, Send, Loader2, Cpu, Link2, Zap,
-  Sparkles, Database, Server
+  Sparkles, Database, Server, RefreshCw
 } from 'lucide-react';
-import { programmingDsaQuestions, dataScienceMlQuestions, databaseSqlQuestions, backendWebDevQuestions, Question, TrackType, DifficultyLevel } from '@/lib/mockData';
+import { Question, TrackType, DifficultyLevel } from '@/lib/mockData';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
@@ -23,16 +23,6 @@ interface Answer {
   topic: string;
   difficulty: DifficultyLevel;
 }
-
-const getQuestionsForTrack = (track: TrackType): Question[] => {
-  switch (track) {
-    case 'Programming & DSA': return programmingDsaQuestions;
-    case 'Data Science & ML': return dataScienceMlQuestions;
-    case 'Database Management & SQL': return databaseSqlQuestions;
-    case 'Backend / Web Dev': return backendWebDevQuestions;
-    default: return programmingDsaQuestions;
-  }
-};
 
 const getTrackConfig = (track: TrackType) => {
   switch (track) {
@@ -67,8 +57,11 @@ const Assessment = () => {
   const { toast } = useToast();
   
   const track = (location.state?.track as TrackType) || 'Programming & DSA';
-  const questions = getQuestionsForTrack(track);
   const trackConfig = getTrackConfig(track);
+  
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
@@ -80,24 +73,56 @@ const Assessment = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const question = questions[currentQuestion];
-  const isLastQuestion = currentQuestion === questions.length - 1;
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const isLastQuestion = questions.length > 0 && currentQuestion === questions.length - 1;
+  const progress = questions.length > 0 ? ((currentQuestion + 1) / questions.length) * 100 : 0;
 
-  useEffect(() => {
-    // Reset state when track changes
+  // Fetch AI-generated questions
+  const fetchQuestions = async () => {
+    setIsLoadingQuestions(true);
+    setLoadError(null);
     setCurrentQuestion(0);
     setAnswers([]);
     setSelectedOption(null);
     setCodingAnswer('');
     setShowResults(false);
     setAiPrediction(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-assessment', {
+        body: { track, numQuestions: 5 },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.questions) {
+        setQuestions(data.questions);
+        console.log('Loaded', data.questions.length, 'AI-generated questions');
+      } else {
+        throw new Error(data?.error || 'Failed to generate questions');
+      }
+    } catch (err: any) {
+      console.error('Failed to load questions:', err);
+      setLoadError(err.message || 'Failed to generate questions. Please try again.');
+      toast({
+        title: "Error Loading Questions",
+        description: err.message || "Could not generate questions. Please retry.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestions();
   }, [track]);
 
   const handleAnswer = () => {
+    if (!question) return;
     const answer = question.type === 'mcq' ? selectedOption : codingAnswer.trim().toUpperCase();
     const correctAnswer = typeof question.correctAnswer === 'number' 
       ? question.correctAnswer 
-      : question.correctAnswer.toUpperCase();
+      : String(question.correctAnswer).toUpperCase();
     
     const isCorrect = answer === correctAnswer;
     
@@ -140,14 +165,12 @@ const Assessment = () => {
       difficulty: a.difficulty
     }));
 
-    // Default level based on score
     let level: 'Beginner' | 'Intermediate' | 'Ready';
     if (correctCount <= 1) level = 'Beginner';
     else if (correctCount <= 3) level = 'Intermediate';
     else level = 'Ready';
 
     try {
-      // First, ensure student exists in database
       const { data: existingStudent } = await supabase
         .from('students')
         .select('id')
@@ -157,7 +180,6 @@ const Assessment = () => {
       let studentId: string;
 
       if (!existingStudent) {
-        // Create student record
         const { data: newStudent, error: studentError } = await supabase
           .from('students')
           .insert({
@@ -177,7 +199,6 @@ const Assessment = () => {
         studentId = existingStudent.id;
       }
 
-      // Call AI prediction edge function
       let prediction: AIPrediction | null = null;
       
       try {
@@ -204,7 +225,7 @@ const Assessment = () => {
           const predictionData = await predictionResponse.json();
           if (predictionData.success && predictionData.prediction) {
             prediction = predictionData.prediction;
-            level = prediction.level; // Use AI-predicted level
+            level = prediction.level;
             setAiPrediction(prediction);
           }
         } else if (predictionResponse.status === 429) {
@@ -216,10 +237,8 @@ const Assessment = () => {
         }
       } catch (aiError) {
         console.error('AI prediction error:', aiError);
-        // Continue with standard scoring
       }
 
-      // Save assessment result to database
       const { error: resultError } = await supabase
         .from('assessment_results')
         .insert({
@@ -242,7 +261,6 @@ const Assessment = () => {
         });
       }
 
-      // Set result in context
       const result: EnhancedStudentResult = {
         id: `result-${Date.now()}`,
         user: username,
@@ -276,6 +294,64 @@ const Assessment = () => {
   const viewDashboard = () => {
     navigate('/student-dashboard');
   };
+
+  // Loading state
+  if (isLoadingQuestions) {
+    return (
+      <div className="min-h-screen relative grid-pattern">
+        <CursorGlow color="primary" size={250} />
+        <Navbar />
+        <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 flex items-center justify-center min-h-[60vh]">
+          <CyberCard variant="glow" className="text-center max-w-md">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 mx-auto mb-4"
+            >
+              <Brain className="w-16 h-16 text-primary" />
+            </motion.div>
+            <h3 className="font-display text-xl font-bold mb-2">Generating Fresh Questions</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              AI is creating unique {track} questions for this attempt...
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-sm text-primary">Powered by AI</span>
+            </div>
+          </CyberCard>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (loadError || questions.length === 0) {
+    return (
+      <div className="min-h-screen relative grid-pattern">
+        <CursorGlow color="primary" size={250} />
+        <Navbar />
+        <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 flex items-center justify-center min-h-[60vh]">
+          <CyberCard variant="glow" className="text-center max-w-md">
+            <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <h3 className="font-display text-xl font-bold mb-2">Failed to Load Questions</h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              {loadError || 'No questions were generated. Please try again.'}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <CyberButton variant="primary" onClick={fetchQuestions}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Try Again
+              </CyberButton>
+              <CyberButton variant="ghost" onClick={() => navigate('/tracks')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Tracks
+              </CyberButton>
+            </div>
+          </CyberCard>
+        </div>
+      </div>
+    );
+  }
 
   if (showResults) {
     const correctCount = answers.filter(a => a.isCorrect).length;
@@ -313,7 +389,6 @@ const Assessment = () => {
               <h1 className="font-display text-3xl font-bold mb-2">Assessment Complete</h1>
               <p className="text-muted-foreground mb-4">Your results have been analyzed</p>
               
-              {/* AI Analysis Badge */}
               {aiPrediction && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -348,7 +423,6 @@ const Assessment = () => {
                 </div>
               </div>
 
-              {/* Estimated Readiness */}
               {aiPrediction && aiPrediction.estimatedReadinessWeeks > 0 && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -383,7 +457,7 @@ const Assessment = () => {
                       )}
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm">{questions[index].topic}</p>
+                          <p className="font-medium text-sm">{questions[index]?.topic}</p>
                           {aiPrediction && !answer.isCorrect && (
                             <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
                               {aiPrediction.skillGaps.find(g => g.skill === answer.topic)?.gapType || 'Gap'}
@@ -391,7 +465,7 @@ const Assessment = () => {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {questions[index].explanation}
+                          {questions[index]?.explanation}
                         </p>
                       </div>
                     </div>
@@ -399,10 +473,16 @@ const Assessment = () => {
                 ))}
               </div>
               
-              <CyberButton variant="primary" size="lg" onClick={viewDashboard} className="w-full">
-                View Dashboard
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </CyberButton>
+              <div className="flex gap-3">
+                <CyberButton variant="ghost" size="lg" onClick={fetchQuestions} className="flex-1">
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Retake with New Questions
+                </CyberButton>
+                <CyberButton variant="primary" size="lg" onClick={viewDashboard} className="flex-1">
+                  View Dashboard
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </CyberButton>
+              </div>
             </CyberCard>
           </motion.div>
         </div>
@@ -436,9 +516,15 @@ const Assessment = () => {
               <trackConfig.icon className={`w-6 h-6 text-${trackConfig.color}`} />
               <span className="font-display font-bold text-xl">{track} Assessment</span>
             </div>
-            <span className="font-mono text-sm text-muted-foreground">
-              Question {currentQuestion + 1} of {questions.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 border border-primary/30 text-xs font-mono text-primary">
+                <Sparkles className="w-3 h-3" />
+                AI Generated
+              </span>
+              <span className="font-mono text-sm text-muted-foreground">
+                Question {currentQuestion + 1} of {questions.length}
+              </span>
+            </div>
           </div>
           
           {/* Progress bar */}
@@ -473,140 +559,142 @@ const Assessment = () => {
               </p>
               <div className="flex items-center justify-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                <span className="text-sm text-primary">Processing with Gemini AI</span>
+                <span className="text-sm text-primary">Processing with AI</span>
               </div>
             </CyberCard>
           </motion.div>
         )}
 
         {/* Question Card */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentQuestion}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-            className="max-w-3xl mx-auto"
-          >
-            <CyberCard variant={trackConfig.variant}>
-              {/* Question type and difficulty badges */}
-              <div className="flex items-center gap-2 mb-6 flex-wrap">
-                {question.type === 'mcq' ? (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30">
-                    <Terminal className="w-4 h-4 text-primary" />
-                    <span className="font-mono text-xs text-primary">MULTIPLE_CHOICE</span>
+        {question && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentQuestion}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-3xl mx-auto"
+            >
+              <CyberCard variant={trackConfig.variant}>
+                {/* Question type and difficulty badges */}
+                <div className="flex items-center gap-2 mb-6 flex-wrap">
+                  {question.type === 'mcq' ? (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30">
+                      <Terminal className="w-4 h-4 text-primary" />
+                      <span className="font-mono text-xs text-primary">MULTIPLE_CHOICE</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 border border-accent/30">
+                      <Code className="w-4 h-4 text-accent" />
+                      <span className="font-mono text-xs text-accent">SHORT_ANSWER</span>
+                    </div>
+                  )}
+                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getDifficultyConfig(question.difficulty).bgClass}`}>
+                    <Zap className="w-4 h-4" />
+                    <span className="font-mono text-xs">{question.difficulty.toUpperCase()}</span>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 border border-accent/30">
-                    <Code className="w-4 h-4 text-accent" />
-                    <span className="font-mono text-xs text-accent">CODING_CHALLENGE</span>
+                  <span className="px-3 py-1 rounded-full bg-muted border border-border font-mono text-xs text-muted-foreground">
+                    {question.topic}
+                  </span>
+                </div>
+
+                {/* Question */}
+                <h2 className="text-xl font-medium mb-8 leading-relaxed">
+                  {question.question}
+                </h2>
+
+                {/* Answer options */}
+                {question.type === 'mcq' && question.options && (
+                  <div className="space-y-3 mb-8">
+                    {question.options.map((option, index) => (
+                      <motion.button
+                        key={index}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => setSelectedOption(index)}
+                        className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+                          selectedOption === index
+                            ? `border-${trackConfig.color} bg-${trackConfig.color}/10`
+                            : 'border-border bg-muted/30 hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono font-bold ${
+                            selectedOption === index
+                              ? `border-${trackConfig.color} bg-${trackConfig.color} text-${trackConfig.color}-foreground`
+                              : 'border-muted-foreground text-muted-foreground'
+                          }`}>
+                            {String.fromCharCode(65 + index)}
+                          </span>
+                          <span className={selectedOption === index ? 'text-foreground' : 'text-muted-foreground'}>
+                            {option}
+                          </span>
+                        </div>
+                      </motion.button>
+                    ))}
                   </div>
                 )}
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getDifficultyConfig(question.difficulty).bgClass}`}>
-                  <Zap className="w-4 h-4" />
-                  <span className="font-mono text-xs">{question.difficulty.toUpperCase()}</span>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-muted border border-border font-mono text-xs text-muted-foreground">
-                  {question.topic}
-                </span>
-              </div>
 
-              {/* Question */}
-              <h2 className="text-xl font-medium mb-8 leading-relaxed">
-                {question.question}
-              </h2>
-
-              {/* Answer options */}
-              {question.type === 'mcq' && question.options && (
-                <div className="space-y-3 mb-8">
-                  {question.options.map((option, index) => (
-                    <motion.button
-                      key={index}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      onClick={() => setSelectedOption(index)}
-                      className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
-                        selectedOption === index
-                          ? `border-${trackConfig.color} bg-${trackConfig.color}/10`
-                          : 'border-border bg-muted/30 hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono font-bold ${
-                          selectedOption === index
-                            ? `border-${trackConfig.color} bg-${trackConfig.color} text-${trackConfig.color}-foreground`
-                            : 'border-muted-foreground text-muted-foreground'
-                        }`}>
-                          {String.fromCharCode(65 + index)}
-                        </span>
-                        <span className={selectedOption === index ? 'text-foreground' : 'text-muted-foreground'}>
-                          {option}
-                        </span>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-              )}
-
-              {/* Coding answer input */}
-              {question.type === 'coding' && (
-                <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="w-4 h-4 text-accent" />
-                    <span className="text-sm text-muted-foreground">Enter your answer below</span>
+                {/* Coding answer input */}
+                {question.type === 'coding' && (
+                  <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-accent" />
+                      <span className="text-sm text-muted-foreground">Enter your answer below</span>
+                    </div>
+                    <Input
+                      type="text"
+                      value={codingAnswer}
+                      onChange={(e) => setCodingAnswer(e.target.value)}
+                      placeholder="Type your answer..."
+                      className="bg-muted border-border focus:border-accent font-mono text-lg py-6"
+                    />
                   </div>
-                  <Input
-                    type="text"
-                    value={codingAnswer}
-                    onChange={(e) => setCodingAnswer(e.target.value)}
-                    placeholder="Type your answer..."
-                    className="bg-muted border-border focus:border-accent font-mono text-lg py-6"
-                  />
+                )}
+
+                {/* Navigation */}
+                <div className="flex items-center justify-between">
+                  <CyberButton 
+                    variant="ghost" 
+                    onClick={() => navigate('/tracks')}
+                    disabled={isSubmitting}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Tracks
+                  </CyberButton>
+
+                  <CyberButton
+                    variant={trackConfig.buttonVariant}
+                    onClick={handleAnswer}
+                    disabled={(question.type === 'mcq' && selectedOption === null) || 
+                              (question.type === 'coding' && !codingAnswer.trim()) ||
+                              isSubmitting}
+                    glowing={(question.type === 'mcq' && selectedOption !== null) || 
+                             (question.type === 'coding' && !!codingAnswer.trim())}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : isLastQuestion ? (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Submit Assessment
+                      </>
+                    ) : (
+                      <>
+                        Next Question
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </CyberButton>
                 </div>
-              )}
-
-              {/* Navigation */}
-              <div className="flex items-center justify-between">
-                <CyberButton 
-                  variant="ghost" 
-                  onClick={() => navigate('/tracks')}
-                  disabled={isSubmitting}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Tracks
-                </CyberButton>
-
-                <CyberButton
-                  variant={trackConfig.buttonVariant}
-                  onClick={handleAnswer}
-                  disabled={(question.type === 'mcq' && selectedOption === null) || 
-                            (question.type === 'coding' && !codingAnswer.trim()) ||
-                            isSubmitting}
-                  glowing={(question.type === 'mcq' && selectedOption !== null) || 
-                           (question.type === 'coding' && !!codingAnswer.trim())}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : isLastQuestion ? (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Submit Assessment
-                    </>
-                  ) : (
-                    <>
-                      Next Question
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </CyberButton>
-              </div>
-            </CyberCard>
-          </motion.div>
-        </AnimatePresence>
+              </CyberCard>
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );
