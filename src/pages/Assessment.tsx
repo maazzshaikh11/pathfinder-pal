@@ -482,38 +482,85 @@ const Assessment = () => {
               
               {/* Question breakdown */}
               <div className="space-y-3 mb-8 text-left">
-                {answers.map((answer, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                    className={`p-4 rounded-lg border ${
-                      answer.isCorrect ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {answer.isCorrect ? (
-                        <CheckCircle className="w-5 h-5 text-success mt-0.5" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-destructive mt-0.5" />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm">{questions[index]?.topic}</p>
+                {answers.map((answer, index) => {
+                  const q = questions[index];
+                  if (!q) return null;
+
+                  // Determine correct answer display text
+                  let correctAnswerText = '';
+                  if (q.type === 'mcq' && q.options) {
+                    const correctIdx = typeof q.correctAnswer === 'number' ? q.correctAnswer : parseInt(String(q.correctAnswer));
+                    correctAnswerText = q.options[correctIdx] || String(q.correctAnswer);
+                  } else {
+                    correctAnswerText = String(q.correctAnswer);
+                  }
+
+                  // User's answer display text
+                  let userAnswerText = '';
+                  if (q.type === 'mcq' && q.options && typeof answer.answer === 'number') {
+                    userAnswerText = q.options[answer.answer] || String(answer.answer);
+                  } else {
+                    userAnswerText = String(answer.answer);
+                  }
+
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                      className={`p-4 rounded-lg border ${
+                        answer.isCorrect ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {answer.isCorrect ? (
+                          <CheckCircle className="w-5 h-5 text-success mt-0.5 shrink-0" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+                        )}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-sm">{q.topic}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getDifficultyConfig(q.difficulty).bgClass}`}>
+                              {q.difficulty}
+                            </span>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground">{q.question}</p>
+
+                          {!answer.isCorrect && (
+                            <div className="space-y-1.5 pt-1">
+                              <div className="flex items-start gap-2">
+                                <XCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+                                <p className="text-xs text-destructive">
+                                  <span className="font-medium">Your answer:</span> {userAnswerText}
+                                </p>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <CheckCircle className="w-3.5 h-3.5 text-success mt-0.5 shrink-0" />
+                                <p className="text-xs text-success">
+                                  <span className="font-medium">Correct answer:</span> {correctAnswerText}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className={`text-xs p-2 rounded ${answer.isCorrect ? 'bg-success/5' : 'bg-destructive/5'}`}>
+                            <span className="font-medium text-muted-foreground">Explanation: </span>
+                            <span className="text-muted-foreground">{q.explanation}</span>
+                          </div>
+
                           {aiPrediction && !answer.isCorrect && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                              {aiPrediction.skillGaps.find(g => g.skill === answer.topic)?.gapType || 'Gap'}
+                            <span className="inline-block text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                              {aiPrediction.skillGaps.find(g => g.skill === answer.topic)?.gapType || 'Skill Gap'}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {questions[index]?.explanation}
-                        </p>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
               
               <div className="flex gap-3">
