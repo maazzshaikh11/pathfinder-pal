@@ -44,6 +44,11 @@ Select the BEST courses (up to 8) that address the student's skill gaps. For eac
 3. A brief reason why this course helps (1 sentence)
 4. Priority order (1 = most important)
 
+CRITICAL RULES:
+- Each recommended course MUST be a DIFFERENT course with a UNIQUE courseIndex. NEVER repeat the same courseIndex.
+- Select diverse courses from different platforms and instructors when possible.
+- If multiple gaps exist, spread recommendations across all gaps.
+
 Also suggest 2-3 general study tips for their weak areas.
 
 Respond ONLY with valid JSON:
