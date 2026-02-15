@@ -104,10 +104,10 @@ const ResumeAnalysisPage = () => {
   };
 
   const handleAnalyzeLinkedin = async () => {
-    if (!linkedinProfileText.trim()) {
+    if (!linkedinUrl.trim() && !linkedinProfileText.trim()) {
       toast({
-        title: "Profile Content Required",
-        description: "Please paste your LinkedIn profile content. LinkedIn blocks automated scraping, so copy-paste your About, Experience, Skills & Education sections.",
+        title: "Input Required",
+        description: "Please provide a LinkedIn URL or paste your profile content.",
         variant: "destructive",
       });
       return;
@@ -320,7 +320,7 @@ const ResumeAnalysisPage = () => {
                         </div>
                         <div>
                           <h3 className="font-display text-lg font-bold">LinkedIn Profile Analysis</h3>
-                          <p className="text-xs text-muted-foreground">Paste your profile content for AI-powered analysis</p>
+                          <p className="text-xs text-muted-foreground">Paste your LinkedIn URL to auto-fetch & analyze</p>
                         </div>
                       </div>
 
@@ -330,21 +330,26 @@ const ResumeAnalysisPage = () => {
                           <Input
                             value={linkedinUrl}
                             onChange={(e) => setLinkedinUrl(e.target.value)}
-                            placeholder="https://linkedin.com/in/your-profile (optional)"
+                            placeholder="https://linkedin.com/in/your-profile"
                             className="pl-10 bg-muted border-border"
                           />
                         </div>
 
-                        <textarea
-                          value={linkedinProfileText}
-                          onChange={(e) => setLinkedinProfileText(e.target.value)}
-                          placeholder="⚠️ REQUIRED: Open your LinkedIn profile → Select all text (Ctrl+A) → Copy (Ctrl+C) → Paste here. Include About, Experience, Skills, Education sections..."
-                          className="w-full min-h-[120px] p-3 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-y focus:outline-none focus:border-primary/50 transition-colors"
-                        />
+                        <details className="group">
+                          <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                            Or paste profile content manually (optional)
+                          </summary>
+                          <textarea
+                            value={linkedinProfileText}
+                            onChange={(e) => setLinkedinProfileText(e.target.value)}
+                            placeholder="Paste your About, Experience, Skills, Education sections here..."
+                            className="w-full min-h-[100px] mt-2 p-3 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-y focus:outline-none focus:border-primary/50 transition-colors"
+                          />
+                        </details>
 
-                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                        <div className="p-3 rounded-lg bg-[hsl(199,89%,48%)]/10 border border-[hsl(199,89%,48%)]/30">
                           <p className="text-xs text-muted-foreground">
-                            <span className="font-medium text-destructive">Important:</span> LinkedIn blocks automated scraping, so you must paste your profile content manually. Open your LinkedIn profile, select all the text on the page (Ctrl+A), copy it (Ctrl+C), and paste it above. The URL field is optional — for your reference only.
+                            <span className="font-medium text-[hsl(199,89%,48%)]">Tip:</span> Just paste your LinkedIn URL and we'll automatically fetch your profile details using AI. If auto-fetch doesn't work, expand the manual option above.
                           </p>
                         </div>
 
