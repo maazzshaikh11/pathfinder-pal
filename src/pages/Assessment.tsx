@@ -399,181 +399,222 @@ const Assessment = () => {
   if (showResults) {
     const correctCount = answers.filter(a => a.isCorrect).length;
     const level = aiPrediction?.level || (correctCount <= 1 ? 'Beginner' : correctCount <= 3 ? 'Intermediate' : 'Ready');
+    const scorePercent = Math.round((correctCount / questions.length) * 100);
     
     return (
       <div className="min-h-screen relative grid-pattern">
         <CursorGlow color="primary" size={250} />
         <Navbar />
         
-        <div className="relative z-10 container mx-auto px-4 pt-24 pb-12">
+        <div className="relative z-10 container mx-auto px-4 pt-24 pb-16 max-w-5xl">
+          {/* Header Section */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-10"
           >
-            <CyberCard variant="glow" className="text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className={`w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center ${
+                level === 'Ready' ? 'bg-success/20 border-success' : 
+                level === 'Intermediate' ? 'bg-accent/20 border-accent' : 
+                'bg-primary/20 border-primary'
+              } border-2`}
+            >
+              <CheckCircle className={`w-10 h-10 ${
+                level === 'Ready' ? 'text-success' : 
+                level === 'Intermediate' ? 'text-accent' : 
+                'text-primary'
+              }`} />
+            </motion.div>
+            
+            <h1 className="font-display text-4xl font-bold mb-2">Assessment Complete</h1>
+            <p className="text-muted-foreground text-lg">Your {track} results have been analyzed</p>
+            
+            {aiPrediction && (
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring" }}
-                className={`w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center ${
-                  level === 'Ready' ? 'bg-success/20 border-success' : 
-                  level === 'Intermediate' ? 'bg-accent/20 border-accent' : 
-                  'bg-primary/20 border-primary'
-                } border-2`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mt-4"
               >
-                <CheckCircle className={`w-12 h-12 ${
-                  level === 'Ready' ? 'text-success' : 
-                  level === 'Intermediate' ? 'text-accent' : 
-                  'text-primary'
-                }`} />
+                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-sm font-medium text-primary">
+                  AI Analysis: {aiPrediction.confidence.toFixed(0)}% Confidence
+                </span>
               </motion.div>
-              
-              <h1 className="font-display text-3xl font-bold mb-2">Assessment Complete</h1>
-              <p className="text-muted-foreground mb-4">Your results have been analyzed</p>
-              
-              {aiPrediction && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mb-6"
-                >
-                  <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                  <span className="text-sm font-medium text-primary">
-                    AI Analysis: {aiPrediction.confidence.toFixed(0)}% Confidence
-                  </span>
-                </motion.div>
+            )}
+          </motion.div>
+
+          {/* Stats Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"
+          >
+            <CyberCard variant="glow" className="text-center p-5">
+              <p className="text-4xl font-display font-bold text-primary">{correctCount}/{questions.length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Correct Answers</p>
+            </CyberCard>
+            <CyberCard variant="glow" className="text-center p-5">
+              <p className="text-4xl font-display font-bold text-foreground">{scorePercent}%</p>
+              <p className="text-sm text-muted-foreground mt-1">Score</p>
+            </CyberCard>
+            <CyberCard variant="glow" className="text-center p-5">
+              <p className={`text-2xl font-display font-bold ${
+                level === 'Ready' ? 'text-success' : 
+                level === 'Intermediate' ? 'text-accent' : 
+                'text-primary'
+              }`}>{level}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {aiPrediction ? 'AI Predicted Level' : 'Proficiency Level'}
+              </p>
+            </CyberCard>
+            <CyberCard variant="glow" className="text-center p-5">
+              {aiPrediction && aiPrediction.estimatedReadinessWeeks > 0 ? (
+                <>
+                  <p className="text-4xl font-display font-bold text-accent">{aiPrediction.estimatedReadinessWeeks}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Weeks to Ready</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-display font-bold text-foreground">{track.split(' ')[0]}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Track</p>
+                </>
               )}
-              
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-3xl font-display font-bold text-primary">{correctCount}/{questions.length}</p>
-                  <p className="text-sm text-muted-foreground">Correct</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <p className={`text-xl font-display font-bold ${
-                    level === 'Ready' ? 'text-success' : 
-                    level === 'Intermediate' ? 'text-accent' : 
-                    'text-primary'
-                  }`}>{level}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {aiPrediction ? 'AI Level' : 'Level'}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-xl font-display font-bold text-foreground">{track}</p>
-                  <p className="text-sm text-muted-foreground">Track</p>
-                </div>
-              </div>
+            </CyberCard>
+          </motion.div>
 
-              {aiPrediction && aiPrediction.estimatedReadinessWeeks > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="p-4 rounded-lg bg-accent/10 border border-accent/30 mb-6"
-                >
-                  <p className="text-sm text-muted-foreground">Estimated time to Placement Ready</p>
-                  <p className="text-2xl font-display font-bold text-accent">
-                    {aiPrediction.estimatedReadinessWeeks} weeks
-                  </p>
-                </motion.div>
-              )}
-              
-              {/* Question breakdown */}
-              <div className="space-y-3 mb-8 text-left">
-                {answers.map((answer, index) => {
-                  const q = questions[index];
-                  if (!q) return null;
+          {/* Question Breakdown */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-10"
+          >
+            <h2 className="font-display text-2xl font-bold mb-6 flex items-center gap-3">
+              <Brain className="w-6 h-6 text-primary" />
+              Question Breakdown
+            </h2>
+            
+            <div className="space-y-4">
+              {answers.map((answer, index) => {
+                const q = questions[index];
+                if (!q) return null;
 
-                  // Determine correct answer display text
-                  let correctAnswerText = '';
-                  if (q.type === 'mcq' && q.options) {
-                    const correctIdx = typeof q.correctAnswer === 'number' ? q.correctAnswer : parseInt(String(q.correctAnswer));
-                    correctAnswerText = q.options[correctIdx] || String(q.correctAnswer);
-                  } else {
-                    correctAnswerText = String(q.correctAnswer);
-                  }
+                let correctAnswerText = '';
+                if (q.type === 'mcq' && q.options) {
+                  const correctIdx = typeof q.correctAnswer === 'number' ? q.correctAnswer : parseInt(String(q.correctAnswer));
+                  correctAnswerText = q.options[correctIdx] || String(q.correctAnswer);
+                } else {
+                  correctAnswerText = String(q.correctAnswer);
+                }
 
-                  // User's answer display text
-                  let userAnswerText = '';
-                  if (q.type === 'mcq' && q.options && typeof answer.answer === 'number') {
-                    userAnswerText = q.options[answer.answer] || String(answer.answer);
-                  } else {
-                    userAnswerText = String(answer.answer);
-                  }
+                let userAnswerText = '';
+                if (q.type === 'mcq' && q.options && typeof answer.answer === 'number') {
+                  userAnswerText = q.options[answer.answer] || String(answer.answer);
+                } else {
+                  userAnswerText = String(answer.answer);
+                }
 
-                  return (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + index * 0.1 }}
-                      className={`p-4 rounded-lg border ${
-                        answer.isCorrect ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {answer.isCorrect ? (
-                          <CheckCircle className="w-5 h-5 text-success mt-0.5 shrink-0" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-                        )}
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-medium text-sm">{q.topic}</p>
-                            <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getDifficultyConfig(q.difficulty).bgClass}`}>
-                              {q.difficulty}
-                            </span>
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.08 }}
+                  >
+                    <CyberCard variant={answer.isCorrect ? 'secondary' : 'accent'} className={`p-5 border-l-4 ${
+                      answer.isCorrect ? 'border-l-success' : 'border-l-destructive'
+                    }`}>
+                      <div className="flex items-start gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                          answer.isCorrect ? 'bg-success/20' : 'bg-destructive/20'
+                        }`}>
+                          {answer.isCorrect ? (
+                            <CheckCircle className="w-5 h-5 text-success" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-destructive" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs text-muted-foreground">Q{index + 1}</span>
+                              <span className="font-medium text-foreground">{q.topic}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded border ${getDifficultyConfig(q.difficulty).bgClass}`}>
+                                {q.difficulty}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded font-mono ${
+                                answer.isCorrect ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
+                              }`}>
+                                {answer.isCorrect ? 'CORRECT' : 'INCORRECT'}
+                              </span>
+                            </div>
                           </div>
 
-                          <p className="text-sm text-muted-foreground">{q.question}</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{q.question}</p>
 
                           {!answer.isCorrect && (
-                            <div className="space-y-1.5 pt-1">
-                              <div className="flex items-start gap-2">
-                                <XCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
-                                <p className="text-xs text-destructive">
-                                  <span className="font-medium">Your answer:</span> {userAnswerText}
-                                </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                                <XCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs font-medium text-destructive mb-1">Your Answer</p>
+                                  <p className="text-sm text-foreground">{userAnswerText}</p>
+                                </div>
                               </div>
-                              <div className="flex items-start gap-2">
-                                <CheckCircle className="w-3.5 h-3.5 text-success mt-0.5 shrink-0" />
-                                <p className="text-xs text-success">
-                                  <span className="font-medium">Correct answer:</span> {correctAnswerText}
-                                </p>
+                              <div className="flex items-start gap-2 p-3 rounded-lg bg-success/10 border border-success/20">
+                                <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs font-medium text-success mb-1">Correct Answer</p>
+                                  <p className="text-sm text-foreground">{correctAnswerText}</p>
+                                </div>
                               </div>
                             </div>
                           )}
 
-                          <div className={`text-xs p-2 rounded ${answer.isCorrect ? 'bg-success/5' : 'bg-destructive/5'}`}>
-                            <span className="font-medium text-muted-foreground">Explanation: </span>
-                            <span className="text-muted-foreground">{q.explanation}</span>
-                          </div>
+                          {q.explanation && (
+                            <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">💡 Explanation</p>
+                              <p className="text-sm text-muted-foreground leading-relaxed">{q.explanation}</p>
+                            </div>
+                          )}
 
                           {aiPrediction && !answer.isCorrect && (
-                            <span className="inline-block text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                              {aiPrediction.skillGaps.find(g => g.skill === answer.topic)?.gapType || 'Skill Gap'}
+                            <span className="inline-block text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                              Gap: {aiPrediction.skillGaps.find(g => g.skill === answer.topic)?.gapType || 'Skill Gap'}
                             </span>
                           )}
                         </div>
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-              
-              <div className="flex gap-3">
-                <CyberButton variant="ghost" size="lg" onClick={fetchQuestions} className="flex-1">
-                  <RefreshCw className="w-5 h-5 mr-2" />
-                  Retake with New Questions
-                </CyberButton>
-                <CyberButton variant="primary" size="lg" onClick={viewDashboard} className="flex-1">
-                  View Dashboard
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </CyberButton>
-              </div>
-            </CyberCard>
+                    </CyberCard>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+          
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto"
+          >
+            <CyberButton variant="ghost" size="lg" onClick={fetchQuestions} className="flex-1">
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Retake with New Questions
+            </CyberButton>
+            <CyberButton variant="primary" size="lg" onClick={viewDashboard} className="flex-1">
+              View Dashboard
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </CyberButton>
           </motion.div>
         </div>
       </div>
