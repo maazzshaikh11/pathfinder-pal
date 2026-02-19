@@ -77,7 +77,16 @@ interface LinkedInAnalysis {
 }
 
 // ── Domain config ─────────────────────────────────────────────────────────────
-const DOMAINS: { id: Domain; label: string; icon: React.ElementType; color: string; description: string }[] = [
+type DomainOption = Domain | 'Overall';
+
+const DOMAINS: { id: DomainOption; label: string; icon: React.ElementType; color: string; description: string }[] = [
+  {
+    id: 'Overall',
+    label: 'Overall Check',
+    icon: Sparkles,
+    color: 'primary',
+    description: 'General resume quality — no specific domain required',
+  },
   {
     id: 'Programming & DSA',
     label: 'Programming & DSA',
@@ -167,7 +176,7 @@ const ResumeAnalysisPage = () => {
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('resume');
 
   // Step 1: domain selection
-  const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<DomainOption | null>(null);
 
   // Resume state
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -207,7 +216,7 @@ const ResumeAnalysisPage = () => {
 
       const form = new FormData();
       form.append('resume', resumeFile);
-      form.append('domain', selectedDomain);
+      form.append('domain', selectedDomain ?? 'Overall');
 
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/resume-analyze`,
@@ -373,33 +382,47 @@ const ResumeAnalysisPage = () => {
           <ScoreBar label="Action Verbs (10%)" score={ra.actionVerbsScore} icon={Award} />
         </div>
 
-        {/* Domain skill match */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Domain Skill Match</p>
-            <span className={`text-xs font-mono font-bold ${matchPct >= 70 ? 'text-success' : matchPct >= 40 ? 'text-accent' : 'text-destructive'}`}>
-              {matchedReqCount}/{totalRequired} required
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {ra.domainRequiredSkills?.map(skill => (
-              <SkillPill
-                key={skill}
-                skill={skill}
-                matched={ra.matchedRequired?.includes(skill) || false}
-              />
-            ))}
-          </div>
-          {ra.matchedBonus?.length > 0 && (
-            <div className="p-2.5 rounded-lg bg-accent/10 border border-accent/20">
-              <p className="text-xs text-accent font-medium mb-1">⭐ Bonus skills found</p>
-              <p className="text-xs text-muted-foreground">{ra.matchedBonus.join(', ')}</p>
+        {/* Domain skill match — hidden for Overall mode */}
+        {ra.domain !== 'Overall' && ra.domainRequiredSkills?.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Domain Skill Match</p>
+              <span className={`text-xs font-mono font-bold ${matchPct >= 70 ? 'text-success' : matchPct >= 40 ? 'text-accent' : 'text-destructive'}`}>
+                {matchedReqCount}/{totalRequired} required
+              </span>
             </div>
-          )}
-        </div>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {ra.domainRequiredSkills?.map(skill => (
+                <SkillPill
+                  key={skill}
+                  skill={skill}
+                  matched={ra.matchedRequired?.includes(skill) || false}
+                />
+              ))}
+            </div>
+            {ra.matchedBonus?.length > 0 && (
+              <div className="p-2.5 rounded-lg bg-accent/10 border border-accent/20">
+                <p className="text-xs text-accent font-medium mb-1">⭐ Bonus skills found</p>
+                <p className="text-xs text-muted-foreground">{ra.matchedBonus.join(', ')}</p>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Missing required skills */}
-        {ra.missingRequired?.length > 0 && (
+        {/* Extracted skills for Overall mode */}
+        {ra.domain === 'Overall' && ra.extractedSkills?.length > 0 && (
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+            <p className="text-xs text-primary font-medium mb-1.5">🔍 Skills Detected in Resume</p>
+            <div className="flex flex-wrap gap-1.5">
+              {ra.extractedSkills.map(skill => (
+                <span key={skill} className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary border border-primary/30 font-mono">{skill}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Missing required skills — only for domain mode */}
+        {ra.domain !== 'Overall' && ra.missingRequired?.length > 0 && (
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
             <p className="text-xs text-destructive font-medium flex items-center gap-1 mb-2">
               <AlertCircle className="w-3 h-3" /> Missing Required Skills ({ra.missingRequired.length})
@@ -572,7 +595,7 @@ const ResumeAnalysisPage = () => {
                           <CyberButton variant="primary" className="w-full" onClick={handleAnalyzeResume} disabled={isAnalyzing} glowing>
                             {isAnalyzing
                               ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analyzing with AI...</>
-                              : <><Sparkles className="w-4 h-4 mr-2" />Analyze Resume for {selectedDomain}</>}
+                              : <><Sparkles className="w-4 h-4 mr-2" />{selectedDomain === 'Overall' ? 'Analyze Resume (Overall)' : `Analyze Resume for ${selectedDomain}`}</>}
                           </CyberButton>
                         </div>
                       ) : (
