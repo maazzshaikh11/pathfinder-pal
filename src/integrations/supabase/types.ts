@@ -175,6 +175,33 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_path_tips: {
+        Row: {
+          created_at: string
+          id: string
+          student_username: string
+          tips: Json
+          track: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          student_username: string
+          tips?: Json
+          track: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          student_username?: string
+          tips?: Json
+          track?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       learning_paths: {
         Row: {
           completed_at: string | null

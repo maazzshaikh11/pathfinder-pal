@@ -217,20 +217,36 @@ const LearningPath = () => {
           .filter(Boolean) as CourseRecommendation[];
 
         setRecommendations(recs);
-        setStudyTips([]);
+
+        // ── Load persisted study tips ─────────────────────────────────────────
+        const { data: tipsRow } = await supabase
+          .from('learning_path_tips')
+          .select('tips')
+          .eq('student_username', username)
+          .eq('track', assessment.track)
+          .maybeSingle();
+
+        setStudyTips(Array.isArray(tipsRow?.tips) ? (tipsRow!.tips as string[]) : []);
         setIsGenerating(false);
         return;
       }
 
       // ── Generate fresh recommendations via AI ─────────────────────────────
       if (forceRegenerate && savedForDomain.length > 0) {
-        // Delete old saved path rows for this domain so we start fresh
+        // Delete old saved path rows and tips for this domain so we start fresh
         const oldCourseIds = savedForDomain.map(p => p.course_id).filter(Boolean) as string[];
-        await supabase
-          .from('learning_paths')
-          .delete()
-          .eq('student_username', username)
-          .in('course_id', oldCourseIds);
+        await Promise.all([
+          supabase
+            .from('learning_paths')
+            .delete()
+            .eq('student_username', username)
+            .in('course_id', oldCourseIds),
+          supabase
+            .from('learning_path_tips')
+            .delete()
+            .eq('student_username', username)
+            .eq('track', assessment.track),
+        ]);
       }
 
       await generateRecommendations(assessment, allCourses || []);
@@ -254,10 +270,11 @@ const LearningPath = () => {
 
       if (data?.success) {
         const recs: CourseRecommendation[] = data.recommendations || [];
+        const tips: string[] = data.studyTips || [];
         setRecommendations(recs);
-        setStudyTips(data.studyTips || []);
+        setStudyTips(tips);
 
-        // ── Persist the generated path so future visits skip AI ──────────────
+        // ── Persist the generated path & tips so future visits skip AI ────────
         if (recs.length > 0) {
           const inserts = recs.map((r, i) => ({
             student_username: username,
@@ -266,7 +283,14 @@ const LearningPath = () => {
             priority: i + 1,
             is_completed: false,
           }));
-          await supabase.from('learning_paths').insert(inserts);
+          await Promise.all([
+            supabase.from('learning_paths').insert(inserts),
+            supabase.from('learning_path_tips').upsert({
+              student_username: username,
+              track: assessment.track,
+              tips,
+            }, { onConflict: 'student_username,track' }),
+          ]);
           // Mark this domain as saved in the tab indicator
           setSavedDomains(prev => new Set([...prev, assessment.track]));
         }
