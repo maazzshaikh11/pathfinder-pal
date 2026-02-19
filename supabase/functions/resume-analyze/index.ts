@@ -1,56 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// ── Domain skill sets (source of truth) ────────────────────────────────────
-const DOMAIN_SKILLS: Record<string, { required: string[]; bonus: string[] }> = {
-  "Programming & DSA": {
-    required: [
-      "Data Structures", "Algorithms", "Dynamic Programming", "Graphs", "Trees",
-      "Arrays", "Linked Lists", "Stacks", "Queues", "Recursion",
-      "Sorting", "Searching", "Hash Maps", "Binary Search", "Time Complexity",
-    ],
-    bonus: [
-      "C++", "Java", "Python", "Competitive Programming", "LeetCode",
-      "CodeForces", "Big-O Notation", "Backtracking", "Greedy Algorithms",
-    ],
-  },
-  "Data Science & ML": {
-    required: [
-      "Python", "Machine Learning", "Deep Learning", "Data Analysis", "Statistics",
-      "Pandas", "NumPy", "Scikit-learn", "Data Visualization", "Feature Engineering",
-      "Model Evaluation", "Regression", "Classification", "Neural Networks",
-    ],
-    bonus: [
-      "TensorFlow", "PyTorch", "Keras", "NLP", "Computer Vision",
-      "Jupyter Notebook", "Matplotlib", "Seaborn", "XGBoost", "Transformers",
-    ],
-  },
-  "Database Management & SQL": {
-    required: [
-      "SQL", "Database Design", "Normalization", "Indexing", "Joins",
-      "Stored Procedures", "ACID Properties", "Transactions", "Query Optimization",
-      "ER Diagrams", "Relational Databases",
-    ],
-    bonus: [
-      "MySQL", "PostgreSQL", "MongoDB", "Redis", "NoSQL",
-      "Data Modeling", "Views", "Triggers", "Oracle", "Firebase",
-    ],
-  },
-  "Backend / Web Dev": {
-    required: [
-      "REST API", "Node.js", "Express.js", "Authentication", "HTTP",
-      "Git", "JavaScript", "TypeScript", "JSON", "MVC Architecture",
-      "Database Integration", "Error Handling",
-    ],
-    bonus: [
-      "Docker", "JWT", "OAuth", "Microservices", "GraphQL",
-      "WebSockets", "CI/CD", "AWS", "Nginx", "Redis",
-    ],
-  },
 };
 
 serve(async (req) => {
@@ -71,14 +24,32 @@ serve(async (req) => {
 
     const isOverall = !domain || domain === "Overall";
 
-    if (!isOverall && !DOMAIN_SKILLS[domain]) {
-      return new Response(JSON.stringify({ error: "Invalid domain selected" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // Fetch domain skills from database (rule-based source of truth)
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    let domainRequired: string[] = [];
+    let domainBonus: string[] = [];
+
+    if (!isOverall) {
+      const { data: skillRows, error: skillError } = await supabase
+        .from("domain_skills")
+        .select("skill, skill_type")
+        .eq("domain", domain);
+
+      if (skillError) {
+        console.error("DB skill fetch error:", skillError);
+        // Fallback: continue with empty arrays and let AI do its best
+      } else if (skillRows) {
+        domainRequired = skillRows.filter(r => r.skill_type === "required").map(r => r.skill);
+        domainBonus = skillRows.filter(r => r.skill_type === "bonus").map(r => r.skill);
+      }
+    }
 
     // Convert PDF to base64 for Gemini vision (chunked to avoid stack overflow on large files)
     const pdfBuffer = await pdfFile.arrayBuffer();
@@ -93,106 +64,70 @@ serve(async (req) => {
     }
     const pdfBase64 = btoa(binary);
 
-    const domainInfo = isOverall ? null : DOMAIN_SKILLS[domain];
     const effectiveDomain = isOverall ? "Overall" : domain;
 
     const systemPrompt = isOverall
       ? `You are an expert resume parser and career analyst for campus placements.
 
-Your job:
-1. Extract ALL skills, technologies, tools, frameworks, and concepts from the resume
-2. Evaluate the overall resume quality across multiple dimensions
-3. Provide a structured JSON analysis WITHOUT domain-specific skill matching
+Analyze the resume holistically WITHOUT domain-specific matching. Evaluate:
+1. Extract ALL skills, technologies, tools, frameworks, and concepts
+2. Assess overall quality: projects, experience, structure, language quality
+3. Provide a structured JSON analysis
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
   "extractedSkills": ["skill1", "skill2", ...],
   "matchedRequired": [],
   "matchedBonus": [],
   "missingRequired": [],
   "missingBonus": [],
-  "skillMatchScore": <0-100, based on breadth and relevance of skills listed>,
-  "projectQualityScore": <0-100 based on projects described, complexity, links>,
-  "experienceScore": <0-100 based on internships, jobs, certifications>,
-  "resumeStructureScore": <0-100 based on presence of key sections, formatting>,
-  "actionVerbsScore": <0-100 based on strong action verbs used>,
-  "overallScore": <weighted = skillMatch*0.40 + projects*0.25 + experience*0.15 + structure*0.10 + actionVerbs*0.10>,
+  "skillMatchScore": <0-100, breadth/depth of skills>,
+  "projectQualityScore": <0-100>,
+  "experienceScore": <0-100>,
+  "resumeStructureScore": <0-100>,
+  "actionVerbsScore": <0-100>,
+  "overallScore": <skillMatch*0.40 + projects*0.25 + experience*0.15 + structure*0.10 + actionVerbs*0.10>,
   "projectCount": <integer>,
   "yearsExperience": <number>,
-  "hasSections": {
-    "skills": <boolean>,
-    "experience": <boolean>,
-    "education": <boolean>,
-    "projects": <boolean>,
-    "summary": <boolean>
-  },
-  "suggestions": [
-    "Specific actionable suggestion 1",
-    "Specific actionable suggestion 2",
-    "Specific actionable suggestion 3",
-    "Specific actionable suggestion 4",
-    "Specific actionable suggestion 5"
-  ],
-  "strengths": ["strength1", "strength2", "strength3"],
-  "candidateName": "<name if found, else null>",
-  "summary": "<2-3 sentence overall summary of the candidate's resume quality and readiness>"
-}
-
-Be strict but fair. A fresh student with no experience should score low on experience but can score well on skills and structure.`
+  "hasSections": { "skills": bool, "experience": bool, "education": bool, "projects": bool, "summary": bool },
+  "suggestions": ["suggestion1","suggestion2","suggestion3","suggestion4","suggestion5"],
+  "strengths": ["strength1","strength2","strength3"],
+  "candidateName": "<name or null>",
+  "summary": "<2-3 sentence overall assessment of the candidate>"
+}`
       : `You are an expert resume parser and career analyst specializing in campus placements.
 
-Your job:
+TASK:
 1. Extract ALL skills, technologies, tools, frameworks, and concepts from the resume
-2. Compare them against the required domain skills for "${domain}"
-3. Provide a structured JSON analysis
+2. Use ML-style matching: match semantically (e.g. "NodeJS" matches "Node.js", "ML" matches "Machine Learning")  
+3. Compare against these DB-sourced domain skill sets for "${domain}":
 
-Domain: ${domain}
-Required Skills to check: ${domainInfo!.required.join(", ")}
-Bonus Skills to check: ${domainInfo!.bonus.join(", ")}
+Required Skills (rule-based from database): ${domainRequired.join(", ")}
+Bonus Skills (rule-based from database): ${domainBonus.join(", ")}
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
-  "extractedSkills": ["skill1", "skill2", ...],
-  "matchedRequired": ["skill1", "skill2", ...],
-  "matchedBonus": ["skill1", "skill2", ...],
-  "missingRequired": ["skill1", "skill2", ...],
-  "missingBonus": ["skill1", "skill2", ...],
-  "skillMatchScore": <0-100 integer>,
-  "projectQualityScore": <0-100 integer>,
-  "experienceScore": <0-100 integer>,
-  "resumeStructureScore": <0-100 integer>,
-  "actionVerbsScore": <0-100 integer>,
-  "overallScore": <0-100 integer>,
+  "extractedSkills": ["skill1", ...],
+  "matchedRequired": ["skills from Required that candidate HAS"],
+  "matchedBonus": ["skills from Bonus that candidate HAS"],
+  "missingRequired": ["skills from Required that candidate LACKS"],
+  "missingBonus": ["skills from Bonus that candidate LACKS"],
+  "skillMatchScore": <(matchedRequired/totalRequired)*70 + (matchedBonus/totalBonus)*30>,
+  "projectQualityScore": <0-100>,
+  "experienceScore": <0-100>,
+  "resumeStructureScore": <0-100>,
+  "actionVerbsScore": <0-100>,
+  "overallScore": <skillMatch*0.40 + projects*0.25 + experience*0.15 + structure*0.10 + actionVerbs*0.10>,
   "projectCount": <integer>,
   "yearsExperience": <number>,
-  "hasSections": {
-    "skills": <boolean>,
-    "experience": <boolean>,
-    "education": <boolean>,
-    "projects": <boolean>,
-    "summary": <boolean>
-  },
-  "suggestions": [
-    "Specific actionable suggestion 1",
-    "Specific actionable suggestion 2",
-    "Specific actionable suggestion 3",
-    "Specific actionable suggestion 4",
-    "Specific actionable suggestion 5"
-  ],
-  "strengths": ["strength1", "strength2", "strength3"],
-  "candidateName": "<name if found, else null>",
-  "summary": "<2-3 sentence AI summary of the candidate's profile fit for ${domain}>"
+  "hasSections": { "skills": bool, "experience": bool, "education": bool, "projects": bool, "summary": bool },
+  "suggestions": ["suggestion1","suggestion2","suggestion3","suggestion4","suggestion5"],
+  "strengths": ["strength1","strength2","strength3"],
+  "candidateName": "<name or null>",
+  "summary": "<2-3 sentence profile fit summary for ${domain}>"
 }
 
-Scoring guidelines:
-- skillMatchScore: (matched required / total required) * 70 + (matched bonus / total bonus) * 30
-- projectQualityScore: based on number of projects, descriptions, GitHub/live links, tech complexity
-- experienceScore: based on internships, jobs, years, relevant domain experience
-- resumeStructureScore: based on presence of key sections, formatting cues, length appropriateness
-- actionVerbsScore: based on use of strong action verbs (built, implemented, led, developed, optimized, etc.)
-- overallScore: weighted = skillMatch*0.40 + projects*0.25 + experience*0.15 + structure*0.10 + actionVerbs*0.10
-
-Be strict but fair. A fresh student with no experience should score low on experience but can score well on skills.`;
+Use semantic/fuzzy matching (ML-style): "React.js" = "React", "ML" = "Machine Learning", "Mongo" = "MongoDB". Be strict but fair.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -206,16 +141,8 @@ Be strict but fair. A fresh student with no experience should score low on exper
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: systemPrompt,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:application/pdf;base64,${pdfBase64}`,
-                },
-              },
+              { type: "text", text: systemPrompt },
+              { type: "image_url", image_url: { url: `data:application/pdf;base64,${pdfBase64}` } },
             ],
           },
         ],
@@ -225,13 +152,14 @@ Be strict but fair. A fresh student with no experience should score low on exper
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI gateway error:", response.status, errText);
+      if (response.status === 429) throw new Error("Rate limit exceeded. Please try again in a moment.");
+      if (response.status === 402) throw new Error("AI credits exhausted.");
       throw new Error(`AI service error: ${response.status}`);
     }
 
     const aiData = await response.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response
     let analysis;
     try {
       const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
@@ -242,10 +170,10 @@ Be strict but fair. A fresh student with no experience should score low on exper
       throw new Error("Failed to parse AI analysis");
     }
 
-    // Attach domain context
+    // Attach domain metadata from DB
     analysis.domain = effectiveDomain;
-    analysis.domainRequiredSkills = domainInfo?.required ?? [];
-    analysis.domainBonusSkills = domainInfo?.bonus ?? [];
+    analysis.domainRequiredSkills = domainRequired;
+    analysis.domainBonusSkills = domainBonus;
 
     return new Response(JSON.stringify({ success: true, analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

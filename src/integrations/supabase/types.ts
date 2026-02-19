@@ -151,6 +151,30 @@ export type Database = {
         }
         Relationships: []
       }
+      domain_skills: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          skill: string
+          skill_type: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          skill: string
+          skill_type: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          skill?: string
+          skill_type?: string
+        }
+        Relationships: []
+      }
       learning_paths: {
         Row: {
           completed_at: string | null
