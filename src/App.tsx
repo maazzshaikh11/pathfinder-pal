@@ -12,6 +12,7 @@ import Assessment from "./pages/Assessment";
 import StudentDashboard from "./pages/StudentDashboard";
 import TPODashboard from "./pages/TPODashboard";
 import TPOChat from "./pages/TPOChat";
+import TPOUsersManagement from "./pages/TPOUsersManagement";
 import StudentChat from "./pages/StudentChat";
 import NotFound from "./pages/NotFound";
 import StudentHome from "./pages/StudentHome";
@@ -53,6 +54,7 @@ const App = () => (
 
             {/* TPO-only routes */}
             <Route path="/tpo-dashboard" element={<ProtectedRoute requiredRole="tpo"><TPODashboard /></ProtectedRoute>} />
+            <Route path="/tpo-users" element={<ProtectedRoute requiredRole="tpo"><TPOUsersManagement /></ProtectedRoute>} />
             <Route path="/tpo-chat" element={<ProtectedRoute requiredRole="tpo"><TPOChat /></ProtectedRoute>} />
 
             {/* Catch-all */}
