@@ -93,6 +93,7 @@ const LearningPath = () => {
   const [studyTips, setStudyTips] = useState<string[]>([]);
   const [completedCourses, setCompletedCourses] = useState<Set<string>>(new Set());
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
+  const [savedDomains, setSavedDomains] = useState<Set<string>>(new Set());
 
   const [isLoadingDomains, setIsLoadingDomains] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -110,24 +111,41 @@ const LearningPath = () => {
   const loadAllDomains = async () => {
     setIsLoadingDomains(true);
     try {
-      const { data, error } = await supabase
-        .from('assessment_results')
-        .select('*')
-        .eq('student_username', username)
-        .order('created_at', { ascending: false });
+      const [assessmentRes, pathRes, courseRes] = await Promise.all([
+        supabase
+          .from('assessment_results')
+          .select('*')
+          .eq('student_username', username)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('learning_paths')
+          .select('course_id, skill_gap')
+          .eq('student_username', username)
+          .not('course_id', 'is', null),
+        supabase.from('courses').select('id, track'),
+      ]);
 
-      if (error) throw error;
+      if (assessmentRes.error) throw assessmentRes.error;
 
       // Deduplicate: latest per track
       const seen = new Set<string>();
       const deduped: AssessmentData[] = [];
-      for (const row of (data || [])) {
+      for (const row of (assessmentRes.data || [])) {
         if (!seen.has(row.track)) {
           seen.add(row.track);
           deduped.push({ ...row, gaps: Array.isArray(row.gaps) ? (row.gaps as unknown as string[]) : [] });
         }
       }
       setAllAssessments(deduped);
+
+      // Build a set of domains that already have saved learning paths
+      const courseTrackMap = new Map((courseRes.data || []).map(c => [c.id, c.track]));
+      const saved = new Set<string>();
+      for (const p of (pathRes.data || [])) {
+        const track = courseTrackMap.get(p.course_id ?? '');
+        if (track) saved.add(track);
+      }
+      setSavedDomains(saved);
 
       // Select domain: from nav state → first available
       const target = location.state?.domain || (deduped[0]?.track ?? null);
@@ -249,6 +267,8 @@ const LearningPath = () => {
             is_completed: false,
           }));
           await supabase.from('learning_paths').insert(inserts);
+          // Mark this domain as saved in the tab indicator
+          setSavedDomains(prev => new Set([...prev, assessment.track]));
         }
       } else {
         throw new Error(data?.error || 'Failed');
@@ -372,13 +392,14 @@ const LearningPath = () => {
               const Icon = c.icon;
               const active = activeDomain === a.track;
               const scorePercent = Math.round((a.correct_answers / a.total_questions) * 100);
+              const hasSaved = savedDomains.has(a.track);
               return (
                 <motion.button
                   key={a.id}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveDomain(a.track)}
-                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 ${
+                  className={`relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 ${
                     active ? `${c.bg} ${c.border} shadow-sm` : 'bg-muted/40 border-border hover:border-primary/30'
                   }`}
                 >
@@ -387,6 +408,12 @@ const LearningPath = () => {
                   <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${active ? 'bg-foreground/10' : 'bg-muted'} ${active ? c.color : 'text-muted-foreground'}`}>
                     {scorePercent}%
                   </span>
+                  {hasSaved && (
+                    <span className="flex items-center gap-1 text-xs font-mono text-success">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                      Saved
+                    </span>
+                  )}
                 </motion.button>
               );
             })}
