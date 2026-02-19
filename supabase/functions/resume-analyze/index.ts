@@ -78,9 +78,18 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Convert PDF to base64 for Gemini vision
+    // Convert PDF to base64 for Gemini vision (chunked to avoid stack overflow on large files)
     const pdfBuffer = await pdfFile.arrayBuffer();
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+    const bytes = new Uint8Array(pdfBuffer);
+    const chunkSize = 8192;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      for (let j = 0; j < chunk.length; j++) {
+        binary += String.fromCharCode(chunk[j]);
+      }
+    }
+    const pdfBase64 = btoa(binary);
 
     const domainInfo = DOMAIN_SKILLS[domain];
     const allDomainSkills = [...domainInfo.required, ...domainInfo.bonus];
