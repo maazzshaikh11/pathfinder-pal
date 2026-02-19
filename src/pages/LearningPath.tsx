@@ -152,32 +152,70 @@ const LearningPath = () => {
     loadLearningPath(assessment);
   }, [activeDomain, allAssessments]);
 
-  const loadLearningPath = async (assessment: AssessmentData) => {
+  const loadLearningPath = async (assessment: AssessmentData, forceRegenerate = false) => {
     setIsGenerating(true);
     try {
-      // Fetch completed courses for this student
-      const { data: paths } = await supabase
+      // Always fetch completed status
+      const { data: completedPaths } = await supabase
         .from('learning_paths')
         .select('course_id, is_completed')
         .eq('student_username', username)
         .eq('is_completed', true);
 
-      if (paths) {
-        setCompletedCourses(new Set(paths.map(p => p.course_id).filter(Boolean) as string[]));
+      if (completedPaths) {
+        setCompletedCourses(new Set(completedPaths.map(p => p.course_id).filter(Boolean) as string[]));
       }
 
-      // Fetch all courses for this track
-      const { data: courses, error: coursesErr } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('track', assessment.track);
+      // Check if a saved path already exists for this domain
+      const { data: savedPaths } = await supabase
+        .from('learning_paths')
+        .select('course_id, skill_gap')
+        .eq('student_username', username)
+        .not('course_id', 'is', null);
 
-      if (coursesErr) throw coursesErr;
-
-      // Also fetch all courses for broader matching if track-specific is thin
+      // Filter saved rows that belong to this track (by joining with courses)
       const { data: allCourses } = await supabase.from('courses').select('*');
+      const courseMap = new Map((allCourses || []).map(c => [c.id, c]));
 
-      await generateRecommendations(assessment, allCourses || courses || []);
+      // Find saved course IDs whose course.track matches the current assessment track
+      const savedForDomain = (savedPaths || []).filter(p => {
+        const course = courseMap.get(p.course_id ?? '');
+        return course?.track === assessment.track;
+      });
+
+      if (!forceRegenerate && savedForDomain.length > 0) {
+        // ── Load from saved rows ──────────────────────────────────────────────
+        const recs: CourseRecommendation[] = savedForDomain
+          .map((p, i) => {
+            const course = courseMap.get(p.course_id ?? '');
+            if (!course) return null;
+            return {
+              course,
+              addressesGap: p.skill_gap || 'General',
+              reason: `Previously recommended based on your ${assessment.track} assessment.`,
+              priority: i + 1,
+            } as CourseRecommendation;
+          })
+          .filter(Boolean) as CourseRecommendation[];
+
+        setRecommendations(recs);
+        setStudyTips([]);
+        setIsGenerating(false);
+        return;
+      }
+
+      // ── Generate fresh recommendations via AI ─────────────────────────────
+      if (forceRegenerate && savedForDomain.length > 0) {
+        // Delete old saved path rows for this domain so we start fresh
+        const oldCourseIds = savedForDomain.map(p => p.course_id).filter(Boolean) as string[];
+        await supabase
+          .from('learning_paths')
+          .delete()
+          .eq('student_username', username)
+          .in('course_id', oldCourseIds);
+      }
+
+      await generateRecommendations(assessment, allCourses || []);
     } catch (err: any) {
       toast({ title: 'Error', description: 'Failed to load learning path', variant: 'destructive' });
       setIsGenerating(false);
@@ -197,13 +235,26 @@ const LearningPath = () => {
       if (error) throw error;
 
       if (data?.success) {
-        setRecommendations(data.recommendations || []);
+        const recs: CourseRecommendation[] = data.recommendations || [];
+        setRecommendations(recs);
         setStudyTips(data.studyTips || []);
+
+        // ── Persist the generated path so future visits skip AI ──────────────
+        if (recs.length > 0) {
+          const inserts = recs.map((r, i) => ({
+            student_username: username,
+            course_id: r.course.id,
+            skill_gap: r.addressesGap || 'General',
+            priority: i + 1,
+            is_completed: false,
+          }));
+          await supabase.from('learning_paths').insert(inserts);
+        }
       } else {
         throw new Error(data?.error || 'Failed');
       }
     } catch (err: any) {
-      // Fallback
+      // Fallback: keyword matching
       const gaps = assessment.gaps || [];
       const fallback = courses
         .filter(c => gaps.some((g: string) =>
@@ -456,7 +507,7 @@ const LearningPath = () => {
                     </div>
                   </CyberCard>
 
-                  <CyberButton variant="ghost" size="sm" onClick={() => loadLearningPath(assessmentData)} className="w-full" disabled={isGenerating}>
+                  <CyberButton variant="ghost" size="sm" onClick={() => loadLearningPath(assessmentData, true)} className="w-full" disabled={isGenerating}>
                     <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />Regenerate Path
                   </CyberButton>
                 </motion.div>
