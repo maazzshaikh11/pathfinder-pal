@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CyberCard } from '@/components/ui/CyberCard';
 import { CyberButton } from '@/components/ui/CyberButton';
@@ -7,12 +7,21 @@ import {
   Brain, ArrowRight, Sparkles, Code,
   Target, TrendingUp,
   Database, Server, Binary, BookOpen, Clock, Star, Zap,
-  GraduationCap, Trophy, BarChart3
+  GraduationCap, Trophy, BarChart3, CheckCircle2, ChevronRight
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CursorGlow from '@/components/CursorGlow';
 import FloatingTPOChat from '@/components/FloatingTPOChat';
 import { useAuth } from '@/lib/authContext';
+import { supabase } from '@/integrations/supabase/client';
+
+interface DomainProgress {
+  track: string;
+  level: string;
+  score: number;
+  total: number;
+  created_at: string;
+}
 
 type TrackId = 'Programming & DSA' | 'Data Science & ML' | 'Database Management & SQL' | 'Backend / Web Dev';
 
@@ -58,9 +67,43 @@ const trackOverview = [
 
 const StudentHome = () => {
   const navigate = useNavigate();
-  const { username } = useAuth();
+  const { username, user } = useAuth();
   const coursesRef = useRef<HTMLDivElement>(null);
   const [activeTrackFilter, setActiveTrackFilter] = useState<TrackId | 'all'>('all');
+  const [domainProgress, setDomainProgress] = useState<DomainProgress[]>([]);
+  const [loadingProgress, setLoadingProgress] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchProgress = async () => {
+      const { data } = await supabase
+        .from('assessment_results')
+        .select('track, level, correct_answers, total_questions, created_at')
+        .eq('student_username', user.email?.split('@')[0] ?? '')
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        // Keep only latest per track
+        const seen = new Set<string>();
+        const deduped: DomainProgress[] = [];
+        for (const row of data) {
+          if (!seen.has(row.track)) {
+            seen.add(row.track);
+            deduped.push({
+              track: row.track,
+              level: row.level,
+              score: row.correct_answers,
+              total: row.total_questions,
+              created_at: row.created_at,
+            });
+          }
+        }
+        setDomainProgress(deduped);
+      }
+      setLoadingProgress(false);
+    };
+    fetchProgress();
+  }, [user]);
 
   const filteredCourses = activeTrackFilter === 'all'
     ? featuredCourses
@@ -146,6 +189,161 @@ const StudentHome = () => {
             ))}
           </motion.div>
         </motion.section>
+
+        {/* === PROGRESS OVERVIEW === */}
+        {!loadingProgress && domainProgress.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-20"
+          >
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-4">
+                <BarChart3 className="w-4 h-4 text-primary" />
+                <span className="text-sm font-mono text-muted-foreground">YOUR_PROGRESS</span>
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-glow mb-2">Domain Progress</h2>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                {domainProgress.length} of 4 domain{domainProgress.length > 1 ? 's' : ''} attempted — continue your journey.
+              </p>
+            </div>
+
+            <div className={`grid gap-4 max-w-5xl mx-auto ${
+              domainProgress.length === 1 ? 'grid-cols-1 max-w-sm' :
+              domainProgress.length === 2 ? 'sm:grid-cols-2 max-w-2xl' :
+              domainProgress.length === 3 ? 'sm:grid-cols-3' :
+              'sm:grid-cols-2 lg:grid-cols-4'
+            }`}>
+              {domainProgress.map((dp, i) => {
+                const trackInfo = trackOverview.find(t => t.id === dp.track);
+                const color = trackInfo?.color ?? 'primary';
+                const pct = Math.round((dp.score / dp.total) * 100);
+                const levelColor =
+                  dp.level === 'Ready' ? 'text-success border-success/40 bg-success/10' :
+                  dp.level === 'Intermediate' ? 'text-accent border-accent/40 bg-accent/10' :
+                  'text-muted-foreground border-border bg-muted';
+                const Icon = trackInfo?.icon ?? Brain;
+
+                return (
+                  <motion.div
+                    key={dp.track}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * i }}
+                  >
+                    <div className={`h-full p-5 rounded-lg bg-card border transition-all duration-300 hover:scale-[1.02] ${
+                      color === 'primary' ? 'border-primary/30 hover:border-primary/60' :
+                      color === 'accent' ? 'border-accent/30 hover:border-accent/60' :
+                      color === 'secondary' ? 'border-secondary/30 hover:border-secondary/60' :
+                      'border-tertiary/30 hover:border-tertiary/60'
+                    }`}>
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          color === 'primary' ? 'bg-primary/20' :
+                          color === 'accent' ? 'bg-accent/20' :
+                          color === 'secondary' ? 'bg-secondary/20' :
+                          'bg-tertiary/20'
+                        }`}>
+                          <Icon className={`w-5 h-5 ${
+                            color === 'primary' ? 'text-primary' :
+                            color === 'accent' ? 'text-accent' :
+                            color === 'secondary' ? 'text-secondary' :
+                            'text-tertiary'
+                          }`} />
+                        </div>
+                        <span className={`text-xs font-mono px-2 py-0.5 rounded-full border ${levelColor}`}>
+                          {dp.level}
+                        </span>
+                      </div>
+
+                      {/* Track name */}
+                      <h3 className="font-display text-sm font-bold text-foreground mb-3 leading-tight">
+                        {dp.track}
+                      </h3>
+
+                      {/* Score bar */}
+                      <div className="mb-4">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-xs text-muted-foreground">Score</span>
+                          <span className={`text-sm font-bold ${
+                            color === 'primary' ? 'text-primary' :
+                            color === 'accent' ? 'text-accent' :
+                            color === 'secondary' ? 'text-secondary' :
+                            'text-tertiary'
+                          }`}>{dp.score}/{dp.total}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full ${
+                              color === 'primary' ? 'bg-primary' :
+                              color === 'accent' ? 'bg-accent' :
+                              color === 'secondary' ? 'bg-secondary' :
+                              'bg-tertiary'
+                            }`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.8, delay: 0.2 + i * 0.1 }}
+                          />
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground mt-1">{pct}%</div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => navigate('/learn', { state: { domain: dp.track } })}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-mono rounded-md border transition-all ${
+                            color === 'primary' ? 'border-primary/40 text-primary hover:bg-primary/10' :
+                            color === 'accent' ? 'border-accent/40 text-accent hover:bg-accent/10' :
+                            color === 'secondary' ? 'border-secondary/40 text-secondary hover:bg-secondary/10' :
+                            'border-tertiary/40 text-tertiary hover:bg-tertiary/10'
+                          }`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          Learn
+                        </button>
+                        <button
+                          onClick={() => navigate('/tracks')}
+                          className="flex items-center justify-center gap-1 py-2 px-3 text-xs font-mono rounded-md border border-border text-muted-foreground hover:border-border/80 hover:text-foreground transition-all"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Retake
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {/* Prompt remaining domains */}
+              {domainProgress.length < 4 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * domainProgress.length }}
+                >
+                  <button
+                    onClick={() => navigate('/tracks')}
+                    className="w-full h-full min-h-[200px] p-5 rounded-lg border border-dashed border-border hover:border-primary/50 bg-muted/20 hover:bg-primary/5 transition-all duration-300 flex flex-col items-center justify-center gap-3 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Target className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-mono text-muted-foreground group-hover:text-foreground transition-colors">
+                        {4 - domainProgress.length} more track{4 - domainProgress.length > 1 ? 's' : ''} to explore
+                      </p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Take an assessment</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </button>
+                </motion.div>
+              )}
+            </div>
+          </motion.section>
+        )}
 
         {/* === FEATURED COURSES === */}
         <section ref={coursesRef} className="mb-20">
