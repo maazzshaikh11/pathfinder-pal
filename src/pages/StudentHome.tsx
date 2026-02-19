@@ -293,7 +293,7 @@ const StudentHome = () => {
                       {/* Actions */}
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate('/learn', { state: { domain: dp.track } })}
+                          onClick={() => navigate('/learning-path', { state: { domain: dp.track } })}
                           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-mono rounded-md border transition-all ${
                             color === 'primary' ? 'border-primary/40 text-primary hover:bg-primary/10' :
                             color === 'accent' ? 'border-accent/40 text-accent hover:bg-accent/10' :
