@@ -2,9 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./lib/authContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./lib/authContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
+import Register from "./pages/Register";
 import TrackSelection from "./pages/TrackSelection";
 import Assessment from "./pages/Assessment";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -18,6 +20,16 @@ import LearningPath from "./pages/LearningPath";
 
 const queryClient = new QueryClient();
 
+// Root redirect: if already logged in, skip login screen
+const RootRoute = () => {
+  const { isLoggedIn, role, loading } = useAuth();
+  if (loading) return null;
+  if (isLoggedIn) {
+    return <Navigate to={role === 'tpo' ? '/tpo-dashboard' : '/student-home'} replace />;
+  }
+  return <Index />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -26,17 +38,24 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/student-home" element={<StudentHome />} />
-            <Route path="/resume" element={<ResumeAnalysis />} />
-            <Route path="/tracks" element={<TrackSelection />} />
-            <Route path="/assessment" element={<Assessment />} />
-            <Route path="/learning-path" element={<LearningPath />} />
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            <Route path="/student-chat" element={<StudentChat />} />
-            <Route path="/tpo-dashboard" element={<TPODashboard />} />
-            <Route path="/tpo-chat" element={<TPOChat />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* Public routes */}
+            <Route path="/" element={<RootRoute />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Student-only routes */}
+            <Route path="/student-home" element={<ProtectedRoute requiredRole="student"><StudentHome /></ProtectedRoute>} />
+            <Route path="/resume" element={<ProtectedRoute requiredRole="student"><ResumeAnalysis /></ProtectedRoute>} />
+            <Route path="/tracks" element={<ProtectedRoute requiredRole="student"><TrackSelection /></ProtectedRoute>} />
+            <Route path="/assessment" element={<ProtectedRoute requiredRole="student"><Assessment /></ProtectedRoute>} />
+            <Route path="/learning-path" element={<ProtectedRoute requiredRole="student"><LearningPath /></ProtectedRoute>} />
+            <Route path="/student-dashboard" element={<ProtectedRoute requiredRole="student"><StudentDashboard /></ProtectedRoute>} />
+            <Route path="/student-chat" element={<ProtectedRoute requiredRole="student"><StudentChat /></ProtectedRoute>} />
+
+            {/* TPO-only routes */}
+            <Route path="/tpo-dashboard" element={<ProtectedRoute requiredRole="tpo"><TPODashboard /></ProtectedRoute>} />
+            <Route path="/tpo-chat" element={<ProtectedRoute requiredRole="tpo"><TPOChat /></ProtectedRoute>} />
+
+            {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

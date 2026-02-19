@@ -4,55 +4,79 @@ import { supabase } from '@/integrations/supabase/client';
 import { CyberButton } from '@/components/ui/CyberButton';
 import { CyberCard } from '@/components/ui/CyberCard';
 import { motion } from 'framer-motion';
-import { Brain, Terminal, Zap, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Brain, Terminal, Zap, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import CursorGlow from '@/components/CursorGlow';
-import { useToast } from '@/hooks/use-toast';
 
 const ALLOWED_DOMAIN = 'apsit.edu.in';
 
-const Login = () => {
+const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const validateEmail = (e: string) => {
-    if (!e.endsWith(`@${ALLOWED_DOMAIN}`)) {
-      return `Only @${ALLOWED_DOMAIN} email addresses are allowed.`;
+  const validateForm = () => {
+    if (!email.trim().toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
+      return `Only @${ALLOWED_DOMAIN} email addresses are permitted.`;
+    }
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (password !== confirmPassword) {
+      return 'Passwords do not match.';
     }
     return '';
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const domainError = validateEmail(email.trim());
-    if (domainError) { setError(domainError); return; }
-    if (!password) { setError('Please enter your password.'); return; }
+    const validationError = validateForm();
+    if (validationError) { setError(validationError); return; }
 
     setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({
+
+    const { error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
     });
 
     if (authError) {
-      setError(authError.message === 'Invalid login credentials'
-        ? 'Invalid email or password. Please try again.'
-        : authError.message);
+      setError(authError.message);
       setLoading(false);
       return;
     }
 
-    toast({ title: 'Welcome back!', description: 'Successfully logged in.' });
-    // Navigation handled by App.tsx ProtectedRoute / auth state change
-    navigate('/student-home');
+    setSuccess(true);
     setLoading(false);
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen relative overflow-hidden grid-pattern flex items-center justify-center">
+        <CursorGlow color="primary" size={250} />
+        <CyberCard variant="glow" className="w-full max-w-md text-center">
+          <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
+          <h2 className="font-display text-2xl font-bold text-glow mb-3">Registration Successful!</h2>
+          <p className="text-muted-foreground mb-6">
+            A verification link has been sent to <span className="text-primary font-mono">{email}</span>.
+            Please check your inbox and confirm your email to activate your account.
+          </p>
+          <CyberButton variant="primary" className="w-full" onClick={() => navigate('/')}>
+            Go to Login
+          </CyberButton>
+        </CyberCard>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden grid-pattern">
@@ -76,34 +100,29 @@ const Login = () => {
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
           className="text-center mb-10"
         >
           <div className="flex items-center justify-center gap-3 mb-6">
-            <motion.div
-              className="w-16 h-16 rounded-xl bg-primary/20 border border-primary/50 flex items-center justify-center glow-primary"
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            >
+            <div className="w-16 h-16 rounded-xl bg-primary/20 border border-primary/50 flex items-center justify-center glow-primary">
               <Brain className="w-8 h-8 text-primary" />
-            </motion.div>
+            </div>
           </div>
           <h1 className="font-display text-5xl md:text-6xl font-bold text-glow mb-3">
             PlacementPal
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Skill Gap Intelligence Platform · APSIT Campus
+            Create your APSIT student account
           </p>
         </motion.div>
 
-        {/* Login Card */}
+        {/* Register Card */}
         <CyberCard variant="glow" className="w-full max-w-md" delay={0.2}>
           <div className="flex items-center gap-2 mb-6">
             <Terminal className="w-5 h-5 text-primary" />
-            <span className="font-mono text-sm text-primary">// AUTHENTICATE</span>
+            <span className="font-mono text-sm text-primary">// CREATE_ACCOUNT</span>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 APSIT Email
@@ -129,9 +148,26 @@ const Login = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="password"
-                  placeholder="Enter password..."
+                  placeholder="Min. 8 characters"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                  className="pl-10 bg-muted border-border focus:border-primary font-mono"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="password"
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                   className="pl-10 bg-muted border-border focus:border-primary font-mono"
                   required
                 />
@@ -149,6 +185,12 @@ const Login = () => {
               </motion.div>
             )}
 
+            {/* Domain restriction notice */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 rounded-lg bg-muted border border-border">
+              <User className="w-4 h-4 text-primary shrink-0" />
+              Registration is restricted to <span className="text-primary font-mono mx-1">@{ALLOWED_DOMAIN}</span> email addresses only.
+            </div>
+
             <CyberButton
               type="submit"
               variant="primary"
@@ -158,20 +200,15 @@ const Login = () => {
               glowing={!loading}
             >
               <Zap className="w-5 h-5 mr-2" />
-              {loading ? 'Authenticating...' : 'Sign In'}
+              {loading ? 'Creating Account...' : 'Create Account'}
             </CyberButton>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Register here
+            Already have an account?{' '}
+            <Link to="/" className="text-primary hover:underline font-medium">
+              Sign in
             </Link>
-          </div>
-
-          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground/70 justify-center">
-            <span className="w-2 h-2 rounded-full bg-success inline-block" />
-            Restricted to @{ALLOWED_DOMAIN} accounts only
           </div>
         </CyberCard>
       </div>
@@ -179,4 +216,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
