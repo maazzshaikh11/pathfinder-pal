@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 import { ResumeAnalysis } from '@/lib/resumeScoring';
+
+// Extended type that includes domain-based analysis fields
+type ResumeAnalysisLike = ResumeAnalysis & { [key: string]: unknown };
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
