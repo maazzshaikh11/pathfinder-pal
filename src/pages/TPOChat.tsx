@@ -14,6 +14,9 @@ import { useAuth } from '@/lib/authContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// The canonical identifier used when a student sends to TPO
+const TPO_USERNAME = 'TPO Admin';
+
 interface Message {
   id: string;
   sender_username: string;
@@ -24,7 +27,7 @@ interface Message {
   created_at: string;
 }
 
-interface StudentChat {
+interface StudentConversation {
   username: string;
   lastMessage: string;
   lastMessageTime: string;
@@ -37,50 +40,51 @@ const TPOChat = () => {
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const [students, setStudents] = useState<StudentChat[]>([]);
+  const [students, setStudents] = useState<StudentConversation[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  // Redirect if not TPO
   useEffect(() => {
-    if (role !== 'tpo') {
-      navigate('/');
-    }
+    if (role !== 'tpo') navigate('/');
   }, [role, navigate]);
 
-  // Fetch all conversations
+  // ── Fetch all student conversations ────────────────────────────────────────
+  // A conversation exists when a student has sent at least one message to TPO.
   const fetchConversations = async () => {
-    if (!username) return;
     try {
+      // Get ALL messages involving the TPO (sent to 'TPO Admin' or sent from 'TPO Admin')
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_role.eq.student,recipient_username.eq."${username}"`)
+        .or(`recipient_username.eq.${TPO_USERNAME},sender_username.eq.${TPO_USERNAME}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Group messages by student
-      const studentMap = new Map<string, StudentChat>();
-      
+      // Group by student username
+      const studentMap = new Map<string, StudentConversation>();
+
       (data || []).forEach((msg: Message) => {
-        const studentUsername = msg.sender_role === 'student' 
-          ? msg.sender_username 
-          : msg.recipient_username;
-        
+        // The student is whichever side is NOT 'TPO Admin'
+        const studentUsername =
+          msg.sender_username === TPO_USERNAME
+            ? msg.recipient_username
+            : msg.sender_username;
+
+        if (!studentUsername) return;
+
         if (!studentMap.has(studentUsername)) {
           studentMap.set(studentUsername, {
             username: studentUsername,
             lastMessage: msg.content,
             lastMessageTime: msg.created_at,
-            unreadCount: msg.sender_role === 'student' && !msg.is_read ? 1 : 0
+            unreadCount: msg.sender_role === 'student' && !msg.is_read ? 1 : 0,
           });
         } else if (msg.sender_role === 'student' && !msg.is_read) {
-          const current = studentMap.get(studentUsername)!;
-          current.unreadCount++;
+          studentMap.get(studentUsername)!.unreadCount++;
         }
       });
 
@@ -92,103 +96,120 @@ const TPOChat = () => {
     }
   };
 
-  // Fetch messages for selected student
+  // ── Fetch messages for selected student ────────────────────────────────────
   const fetchMessages = async (studentUsername: string) => {
-    if (!username) return;
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`and(sender_username.eq."${studentUsername}",recipient_username.eq."${username}"),and(sender_username.eq."${username}",recipient_username.eq."${studentUsername}")`)
+        .or(
+          `and(sender_username.eq.${studentUsername},recipient_username.eq.${TPO_USERNAME}),` +
+          `and(sender_username.eq.${TPO_USERNAME},recipient_username.eq.${studentUsername})`
+        )
         .order('created_at', { ascending: true });
 
       if (error) throw error;
       setMessages(data || []);
 
-      // Mark messages as read
+      // Mark unread student messages as read
       await supabase
         .from('messages')
         .update({ is_read: true })
         .eq('sender_username', studentUsername)
-        .eq('recipient_username', username);
+        .eq('recipient_username', TPO_USERNAME)
+        .eq('is_read', false);
 
+      // Refresh sidebar counts
+      fetchConversations();
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
   };
 
+  // ── Initial load + realtime subscription ───────────────────────────────────
   useEffect(() => {
     fetchConversations();
 
-    // Subscribe to new messages
     const channel = supabase
-      .channel('tpo-messages')
+      .channel('tpo-chat-realtime')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
+        { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
-          const newMsg = payload.new as Message;
-          if (newMsg.recipient_username === username || newMsg.sender_username === username) {
-            if (selectedStudent && (newMsg.sender_username === selectedStudent || newMsg.recipient_username === selectedStudent)) {
-              setMessages(prev => [...prev, newMsg]);
+          const msg = payload.new as Message;
+          const involvesTpo =
+            msg.recipient_username === TPO_USERNAME ||
+            msg.sender_username === TPO_USERNAME;
+
+          if (!involvesTpo) return;
+
+          // Add to open conversation in real-time
+          if (selectedStudent) {
+            const isCurrentConvo =
+              (msg.sender_username === selectedStudent && msg.recipient_username === TPO_USERNAME) ||
+              (msg.sender_username === TPO_USERNAME && msg.recipient_username === selectedStudent);
+            if (isCurrentConvo) {
+              setMessages(prev => [...prev, msg]);
             }
-            fetchConversations();
           }
+
+          fetchConversations();
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [username, selectedStudent]);
 
   useEffect(() => {
-    if (selectedStudent) {
-      fetchMessages(selectedStudent);
-    }
+    if (selectedStudent) fetchMessages(selectedStudent);
   }, [selectedStudent]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── Send message ───────────────────────────────────────────────────────────
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedStudent) return;
-
     setSending(true);
     try {
       const { error } = await supabase
         .from('messages')
         .insert({
-          sender_username: username,
+          sender_username: TPO_USERNAME,   // always 'TPO Admin' so students can match it
           sender_role: 'tpo',
           recipient_username: selectedStudent,
-          content: newMessage.trim()
+          content: newMessage.trim(),
         });
 
       if (error) throw error;
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: 'Failed to send message', variant: 'destructive' });
     } finally {
       setSending(false);
     }
   };
 
-  const formatTime = (dateString: string) => {
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
+
+  // Group messages by date
+  const groupedMessages = messages.reduce((acc, msg) => {
+    const d = formatDate(msg.created_at);
+    if (!acc[d]) acc[d] = [];
+    acc[d].push(msg);
+    return acc;
+  }, {} as Record<string, Message[]>);
 
   return (
     <div className="min-h-screen relative grid-pattern">
@@ -197,15 +218,14 @@ const TPOChat = () => {
       
       <div className="relative z-10 container mx-auto px-4 pt-24 pb-12">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between mb-8"
         >
           <div className="flex items-center gap-4">
             <CyberButton variant="ghost" onClick={() => navigate('/tpo-dashboard')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="w-4 h-4 mr-2" />Back
             </CyberButton>
             <div>
               <h1 className="font-display text-3xl font-bold text-glow">Student Messages</h1>
@@ -213,14 +233,13 @@ const TPOChat = () => {
             </div>
           </div>
           <CyberButton variant="ghost" onClick={fetchConversations}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
+            <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </CyberButton>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-          {/* Student List */}
-          <CyberCard variant="glow" className="overflow-hidden">
+        <div className="grid md:grid-cols-3 gap-6" style={{ height: 'calc(100vh - 220px)' }}>
+          {/* ── Student list ── */}
+          <CyberCard variant="glow" className="overflow-hidden flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-accent" />
               <h2 className="font-display font-bold">Students</h2>
@@ -233,11 +252,11 @@ const TPOChat = () => {
             ) : students.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No conversations yet</p>
-                <p className="text-sm">Students will appear here when they message you</p>
+                <p className="text-sm">No conversations yet</p>
+                <p className="text-xs mt-1">Students will appear here when they message you</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              <div className="flex-1 overflow-y-auto space-y-2">
                 {students.map((student) => (
                   <motion.button
                     key={student.username}
@@ -251,14 +270,16 @@ const TPOChat = () => {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
-                        <span className="text-primary font-bold">{student.username.charAt(0).toUpperCase()}</span>
+                      <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-bold text-sm">
+                          {student.username.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium truncate">{student.username}</p>
+                          <p className="font-medium truncate text-sm">{student.username}</p>
                           {student.unreadCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-accent text-xs flex items-center justify-center font-bold">
+                            <span className="w-5 h-5 rounded-full bg-accent text-xs flex items-center justify-center font-bold shrink-0 ml-1">
                               {student.unreadCount}
                             </span>
                           )}
@@ -272,20 +293,20 @@ const TPOChat = () => {
             )}
           </CyberCard>
 
-          {/* Chat Area */}
-          <CyberCard variant="accent" className="md:col-span-2 flex flex-col">
+          {/* ── Chat area ── */}
+          <CyberCard variant="accent" className="md:col-span-2 flex flex-col overflow-hidden">
             {!selectedStudent ? (
               <div className="flex-1 flex items-center justify-center text-center">
                 <div>
                   <MessageSquare className="w-16 h-16 text-accent/50 mx-auto mb-4" />
                   <h3 className="font-display text-xl font-bold mb-2">Select a Student</h3>
-                  <p className="text-muted-foreground">Choose a student from the list to start chatting</p>
+                  <p className="text-muted-foreground text-sm">Choose a student from the list to start chatting</p>
                 </div>
               </div>
             ) : (
-              <>
-                {/* Chat Header */}
-                <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <div className="flex flex-col h-full">
+                {/* Chat header */}
+                <div className="flex items-center gap-3 pb-4 border-b border-border shrink-0">
                   <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
                     <User className="w-5 h-5 text-primary" />
                   </div>
@@ -299,35 +320,52 @@ const TPOChat = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto py-4 space-y-3 max-h-[400px]">
-                  <AnimatePresence>
-                    {messages.map((msg) => (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${msg.sender_role === 'tpo' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[75%] p-3 rounded-lg ${
-                          msg.sender_role === 'tpo'
-                            ? 'bg-accent/20 border border-accent/30'
-                            : 'bg-muted border border-border'
-                        }`}>
-                          <p className="text-sm">{msg.content}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{formatTime(msg.created_at)}</p>
+                <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
+                  {messages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      No messages yet — say hello!
+                    </div>
+                  ) : (
+                    <>
+                      {Object.entries(groupedMessages).map(([date, msgs]) => (
+                        <div key={date}>
+                          <div className="flex items-center gap-4 my-3">
+                            <div className="flex-1 h-px bg-border" />
+                            <span className="text-xs text-muted-foreground">{date}</span>
+                            <div className="flex-1 h-px bg-border" />
+                          </div>
+                          <AnimatePresence>
+                            {msgs.map((msg) => (
+                              <motion.div
+                                key={msg.id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`flex mb-3 ${msg.sender_role === 'tpo' ? 'justify-end' : 'justify-start'}`}
+                              >
+                                <div className={`max-w-[75%] p-3 rounded-lg ${
+                                  msg.sender_role === 'tpo'
+                                    ? 'bg-accent/20 border border-accent/30'
+                                    : 'bg-muted border border-border'
+                                }`}>
+                                  <p className="text-sm">{msg.content}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">{formatTime(msg.created_at)}</p>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
                         </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  <div ref={messagesEndRef} />
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </>
+                  )}
                 </div>
 
                 {/* Input */}
-                <div className="flex gap-2 pt-4 border-t border-border">
+                <div className="flex gap-2 pt-4 border-t border-border shrink-0">
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
+                    placeholder={`Reply to ${selectedStudent}...`}
                     className="flex-1 bg-muted border-border"
                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   />
@@ -339,7 +377,7 @@ const TPOChat = () => {
                     {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </CyberButton>
                 </div>
-              </>
+              </div>
             )}
           </CyberCard>
         </div>
