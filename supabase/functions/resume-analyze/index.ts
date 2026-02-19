@@ -69,7 +69,9 @@ serve(async (req) => {
       });
     }
 
-    if (!domain || !DOMAIN_SKILLS[domain]) {
+    const isOverall = !domain || domain === "Overall";
+
+    if (!isOverall && !DOMAIN_SKILLS[domain]) {
       return new Response(JSON.stringify({ error: "Invalid domain selected" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -91,10 +93,53 @@ serve(async (req) => {
     }
     const pdfBase64 = btoa(binary);
 
-    const domainInfo = DOMAIN_SKILLS[domain];
-    const allDomainSkills = [...domainInfo.required, ...domainInfo.bonus];
+    const domainInfo = isOverall ? null : DOMAIN_SKILLS[domain];
+    const effectiveDomain = isOverall ? "Overall" : domain;
 
-    const systemPrompt = `You are an expert resume parser and career analyst specializing in campus placements.
+    const systemPrompt = isOverall
+      ? `You are an expert resume parser and career analyst for campus placements.
+
+Your job:
+1. Extract ALL skills, technologies, tools, frameworks, and concepts from the resume
+2. Evaluate the overall resume quality across multiple dimensions
+3. Provide a structured JSON analysis WITHOUT domain-specific skill matching
+
+Return ONLY valid JSON in this exact format:
+{
+  "extractedSkills": ["skill1", "skill2", ...],
+  "matchedRequired": [],
+  "matchedBonus": [],
+  "missingRequired": [],
+  "missingBonus": [],
+  "skillMatchScore": <0-100, based on breadth and relevance of skills listed>,
+  "projectQualityScore": <0-100 based on projects described, complexity, links>,
+  "experienceScore": <0-100 based on internships, jobs, certifications>,
+  "resumeStructureScore": <0-100 based on presence of key sections, formatting>,
+  "actionVerbsScore": <0-100 based on strong action verbs used>,
+  "overallScore": <weighted = skillMatch*0.40 + projects*0.25 + experience*0.15 + structure*0.10 + actionVerbs*0.10>,
+  "projectCount": <integer>,
+  "yearsExperience": <number>,
+  "hasSections": {
+    "skills": <boolean>,
+    "experience": <boolean>,
+    "education": <boolean>,
+    "projects": <boolean>,
+    "summary": <boolean>
+  },
+  "suggestions": [
+    "Specific actionable suggestion 1",
+    "Specific actionable suggestion 2",
+    "Specific actionable suggestion 3",
+    "Specific actionable suggestion 4",
+    "Specific actionable suggestion 5"
+  ],
+  "strengths": ["strength1", "strength2", "strength3"],
+  "candidateName": "<name if found, else null>",
+  "summary": "<2-3 sentence overall summary of the candidate's resume quality and readiness>"
+}
+
+Be strict but fair. A fresh student with no experience should score low on experience but can score well on skills and structure.`
+      : `You are an expert resume parser and career analyst specializing in campus placements.
 
 Your job:
 1. Extract ALL skills, technologies, tools, frameworks, and concepts from the resume
@@ -102,8 +147,8 @@ Your job:
 3. Provide a structured JSON analysis
 
 Domain: ${domain}
-Required Skills to check: ${domainInfo.required.join(", ")}
-Bonus Skills to check: ${domainInfo.bonus.join(", ")}
+Required Skills to check: ${domainInfo!.required.join(", ")}
+Bonus Skills to check: ${domainInfo!.bonus.join(", ")}
 
 Return ONLY valid JSON in this exact format:
 {
@@ -198,9 +243,9 @@ Be strict but fair. A fresh student with no experience should score low on exper
     }
 
     // Attach domain context
-    analysis.domain = domain;
-    analysis.domainRequiredSkills = domainInfo.required;
-    analysis.domainBonusSkills = domainInfo.bonus;
+    analysis.domain = effectiveDomain;
+    analysis.domainRequiredSkills = domainInfo?.required ?? [];
+    analysis.domainBonusSkills = domainInfo?.bonus ?? [];
 
     return new Response(JSON.stringify({ success: true, analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
