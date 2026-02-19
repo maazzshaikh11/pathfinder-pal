@@ -2,7 +2,7 @@ import { useAuth } from '@/lib/authContext';
 import { CyberButton } from './ui/CyberButton';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, Home, ClipboardCheck, LayoutDashboard, Shield, Brain, MessageSquare, FileText, GraduationCap } from 'lucide-react';
+import { LogOut, Home, ClipboardCheck, LayoutDashboard, Shield, Brain, MessageSquare, FileText, GraduationCap, Users } from 'lucide-react';
 
 const Navbar = () => {
   const { isLoggedIn, role, username, logout } = useAuth();
@@ -22,6 +22,7 @@ const Navbar = () => {
     { path: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ] : isLoggedIn && role === 'tpo' ? [
     { path: '/tpo-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/tpo-users', label: 'Users', icon: Users },
     { path: '/tpo-chat', label: 'Messages', icon: MessageSquare },
   ] : [];
 
