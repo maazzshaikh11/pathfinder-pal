@@ -316,37 +316,71 @@ const ResumeAnalysisPage = () => {
             <p className="text-sm text-muted-foreground">Skills will be evaluated against this domain's requirements</p>
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {DOMAINS.map((d) => {
-            const Icon = d.icon;
-            const active = selectedDomain === d.id;
+        <div className="space-y-3">
+          {/* Overall Check — full width row */}
+          {(() => {
+            const overall = DOMAINS.find(d => d.id === 'Overall')!;
+            const Icon = overall.icon;
+            const active = selectedDomain === overall.id;
             return (
               <motion.button
-                key={d.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setSelectedDomain(d.id)}
-                className={`p-4 rounded-lg border-2 text-left transition-all duration-300 ${
-                  active
-                    ? `border-${d.color} bg-${d.color}/10`
-                    : 'border-border bg-muted/30 hover:border-primary/40'
+                key={overall.id}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => setSelectedDomain(overall.id)}
+                className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-300 ${
+                  active ? 'border-primary bg-primary/10' : 'border-border bg-muted/30 hover:border-primary/40'
                 }`}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    active ? `bg-${d.color}/20 border border-${d.color}/50` : 'bg-muted border border-border'
+                    active ? 'bg-primary/20 border border-primary/50' : 'bg-muted border border-border'
                   }`}>
-                    <Icon className={`w-5 h-5 ${active ? `text-${d.color}` : 'text-muted-foreground'}`} />
+                    <Icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
-                    <p className={`font-display font-bold text-sm ${active ? `text-${d.color}` : 'text-foreground'}`}>{d.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{d.description}</p>
+                    <p className={`font-display font-bold text-sm ${active ? 'text-primary' : 'text-foreground'}`}>{overall.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{overall.description}</p>
                   </div>
-                  {active && <CheckCircle2 className={`w-4 h-4 text-${d.color} ml-auto shrink-0 mt-0.5`} />}
+                  {active && <CheckCircle2 className="w-4 h-4 text-primary ml-auto shrink-0" />}
                 </div>
               </motion.button>
             );
-          })}
+          })()}
+
+          {/* 4 domain options — 2x2 grid */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            {DOMAINS.filter(d => d.id !== 'Overall').map((d) => {
+              const Icon = d.icon;
+              const active = selectedDomain === d.id;
+              return (
+                <motion.button
+                  key={d.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setSelectedDomain(d.id)}
+                  className={`p-4 rounded-lg border-2 text-left transition-all duration-300 ${
+                    active
+                      ? `border-${d.color} bg-${d.color}/10`
+                      : 'border-border bg-muted/30 hover:border-primary/40'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                      active ? `bg-${d.color}/20 border border-${d.color}/50` : 'bg-muted border border-border'
+                    }`}>
+                      <Icon className={`w-5 h-5 ${active ? `text-${d.color}` : 'text-muted-foreground'}`} />
+                    </div>
+                    <div>
+                      <p className={`font-display font-bold text-sm ${active ? `text-${d.color}` : 'text-foreground'}`}>{d.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{d.description}</p>
+                    </div>
+                    {active && <CheckCircle2 className={`w-4 h-4 text-${d.color} ml-auto shrink-0 mt-0.5`} />}
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
       </CyberCard>
     </motion.div>
