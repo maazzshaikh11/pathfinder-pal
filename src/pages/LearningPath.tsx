@@ -171,38 +171,36 @@ const LearningPath = () => {
   }, [activeDomain, allAssessments]);
 
   const loadLearningPath = async (assessment: AssessmentData, forceRegenerate = false) => {
-    setIsGenerating(true);
     try {
-      // Always fetch completed status
-      const { data: completedPaths } = await supabase
-        .from('learning_paths')
-        .select('course_id, is_completed')
-        .eq('student_username', username)
-        .eq('is_completed', true);
+      // Fetch completed status + saved paths + all courses in parallel
+      const [completedRes, savedPathsRes, allCoursesRes] = await Promise.all([
+        supabase
+          .from('learning_paths')
+          .select('course_id, is_completed')
+          .eq('student_username', username)
+          .eq('is_completed', true),
+        supabase
+          .from('learning_paths')
+          .select('course_id, skill_gap')
+          .eq('student_username', username)
+          .not('course_id', 'is', null),
+        supabase.from('courses').select('*'),
+      ]);
 
-      if (completedPaths) {
-        setCompletedCourses(new Set(completedPaths.map(p => p.course_id).filter(Boolean) as string[]));
+      if (completedRes.data) {
+        setCompletedCourses(new Set(completedRes.data.map(p => p.course_id).filter(Boolean) as string[]));
       }
 
-      // Check if a saved path already exists for this domain
-      const { data: savedPaths } = await supabase
-        .from('learning_paths')
-        .select('course_id, skill_gap')
-        .eq('student_username', username)
-        .not('course_id', 'is', null);
+      const courseMap = new Map((allCoursesRes.data || []).map(c => [c.id, c]));
 
-      // Filter saved rows that belong to this track (by joining with courses)
-      const { data: allCourses } = await supabase.from('courses').select('*');
-      const courseMap = new Map((allCourses || []).map(c => [c.id, c]));
-
-      // Find saved course IDs whose course.track matches the current assessment track
-      const savedForDomain = (savedPaths || []).filter(p => {
+      // Find saved rows for this domain
+      const savedForDomain = (savedPathsRes.data || []).filter(p => {
         const course = courseMap.get(p.course_id ?? '');
         return course?.track === assessment.track;
       });
 
       if (!forceRegenerate && savedForDomain.length > 0) {
-        // ── Load from saved rows ──────────────────────────────────────────────
+        // ── Load instantly from saved rows — no AI call ───────────────────────
         const recs: CourseRecommendation[] = savedForDomain
           .map((p, i) => {
             const course = courseMap.get(p.course_id ?? '');
@@ -218,7 +216,7 @@ const LearningPath = () => {
 
         setRecommendations(recs);
 
-        // ── Load persisted study tips ─────────────────────────────────────────
+        // Load persisted study tips
         const { data: tipsRow } = await supabase
           .from('learning_path_tips')
           .select('tips')
@@ -227,13 +225,15 @@ const LearningPath = () => {
           .maybeSingle();
 
         setStudyTips(Array.isArray(tipsRow?.tips) ? (tipsRow!.tips as string[]) : []);
-        setIsGenerating(false);
+        // No spinner needed — loaded from cache
         return;
       }
 
-      // ── Generate fresh recommendations via AI ─────────────────────────────
+      // ── Need to generate — show spinner only now ──────────────────────────
+      setIsGenerating(true);
+
       if (forceRegenerate && savedForDomain.length > 0) {
-        // Delete old saved path rows and tips for this domain so we start fresh
+        // Delete old saved path rows and tips so we start fresh
         const oldCourseIds = savedForDomain.map(p => p.course_id).filter(Boolean) as string[];
         await Promise.all([
           supabase
@@ -249,7 +249,7 @@ const LearningPath = () => {
         ]);
       }
 
-      await generateRecommendations(assessment, allCourses || []);
+      await generateRecommendations(assessment, allCoursesRes.data || []);
     } catch (err: any) {
       toast({ title: 'Error', description: 'Failed to load learning path', variant: 'destructive' });
       setIsGenerating(false);
