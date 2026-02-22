@@ -358,7 +358,7 @@ const Assessment = () => {
               AI is creating unique {track} questions for this attempt...
             </p>
             <div className="flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm text-primary">Powered by AI</span>
             </div>
           </CyberCard>
@@ -439,7 +439,7 @@ const Assessment = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mt-4"
               >
-                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-primary">
                   AI Analysis: {aiPrediction.confidence.toFixed(0)}% Confidence
                 </span>
@@ -689,7 +689,7 @@ const Assessment = () => {
                 Using machine learning to predict your placement readiness...
               </p>
               <div className="flex items-center justify-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-sm text-primary">Processing with AI</span>
               </div>
             </CyberCard>

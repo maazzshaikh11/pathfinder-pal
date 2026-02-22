@@ -205,7 +205,7 @@ const TrackSelection = () => {
         >
           <div className="inline-flex items-center gap-4 px-6 py-3 rounded-lg bg-muted/50 border border-border">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
               <span className="text-sm text-muted-foreground">5 challenges per track</span>
             </div>
             <div className="w-px h-4 bg-border" />
